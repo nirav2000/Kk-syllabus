@@ -1,3 +1,4 @@
+import { gardenPicture } from './garden-picture.js';
 import { localData } from './local-data.js';
 import { rectangle, validPair, initialGarden, stages, evidence } from './garden-model.js';
 
@@ -20,8 +21,7 @@ export function openGarden(root, onExit) {
   const titles = ['Could the same garden need less fence?', 'Change the shape. What stays the same?', 'Inside space or outside edge?', 'Try it with a new rectangle', 'Take the idea into a room', 'Make your own counterexample'];
   function picture(w, h, reveal = true) {
     const r = rectangle(w, h);
-    const cells = Array.from({ length: r.area }, () => '<i></i>').join('');
-    return `<figure class="garden-figure"><div class="garden-board ${mode === 'edge' ? 'edge-mode' : ''}" style="--cols:${w};width:${w / 12 * 100}%" role="img" aria-label="${w} by ${h} rectangle. Each tile is one square metre.">${cells}${mode === 'edge' ? `<span class="edge-mark edge-${edge}" aria-hidden="true"></span>` : ''}</div><figcaption>${w} m × ${h} m · Each tile is 1 m²</figcaption></figure>${reveal ? `<div class="garden-measures"><span>Inside: <b>${r.area} m²</b></span><span>Around: <b>${r.perimeter} m</b></span></div>` : ''}`;
+    return `<figure class="garden-figure">${gardenPicture(w,h,mode,edge)}<figcaption>${w} m × ${h} m · Each tile is 1 m²</figcaption></figure>${reveal ? `<div class="garden-measures"><span>Inside: <b>${r.area} m²</b></span><span>Around: <b>${r.perimeter} m</b></span></div>` : ''}`;
   }
   const button = (id, label) => `<button id="${id}" class="primary">${label}</button>`;
   function draw() {
