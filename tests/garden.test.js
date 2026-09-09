@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {rectangle,validPair,initialGarden,evidence} from '../src/garden-model.js';
+test('24 tiles stay invariant while perimeter changes',()=>{assert.deepEqual([12,8,6].map(w=>rectangle(w,24/w).area),[24,24,24]);assert.deepEqual([12,8,6].map(w=>rectangle(w,24/w).perimeter),[28,22,20]);});
+test('boundary formula matches independent enumeration of exposed unit edges',()=>{for(let w=1;w<=12;w++)for(let h=1;h<=12;h++){let edges=0;for(let x=0;x<w;x++)for(let y=0;y<h;y++)edges+=(x===0)+(x===w-1)+(y===0)+(y===h-1);assert.equal(rectangle(w,h).perimeter,edges);}});
+test('equal perimeter does not require equal area',()=>{assert(validPair(rectangle(4,4),rectangle(5,3)));assert(!validPair(rectangle(4,3),rectangle(3,4)));assert(!validPair(rectangle(4,4),rectangle(4,5)));});
+test('invalid and fractional dimensions rejected',()=>{for(const n of [0,-1,13,1.5,NaN,Infinity])assert.throws(()=>rectangle(n,3));});
+test('exploring or finishing alone does not establish independent evidence',()=>{const s=initialGarden();s.completed=true;s.visited=[6,8];assert.equal(evidence(s).applied,'not yet tried');assert.equal(evidence(s).created,false);});
+test('correction and hints are not misreported as independent transfer',()=>{const s=initialGarden();s.attempts=[{stage:'transfer',correct:false,supported:false},{stage:'transfer',correct:true,supported:true},{stage:'apply',correct:true,supported:true}];assert.equal(evidence(s).transferred,'practised with support or revision');assert.equal(evidence(s).applied,'practised with support or revision');});
+test('first unassisted correct attempt is reported without mastery inflation',()=>{const s=initialGarden();s.attempts=[{stage:'apply',correct:true,supported:false}];assert.equal(evidence(s).applied,'independent first attempt');assert.equal(evidence(s).transferred,'not yet tried');});
