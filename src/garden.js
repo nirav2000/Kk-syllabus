@@ -1,8 +1,9 @@
+import { localData } from './local-data.js';
 import { rectangle, validPair, initialGarden, stages, evidence } from './garden-model.js';
 
 const KEY = 'curious-garden-v1';
 export function loadGarden() {
-  try { const s = JSON.parse(localStorage.getItem(KEY)); return s?.version === 1 && Number.isInteger(s.stage) && s.stage >= 0 && s.stage < stages.length && Array.isArray(s.attempts) && Array.isArray(s.visited) && s.hints ? s : initialGarden(); }
+  try { const s = localData.read().garden; return s?.version === 1 && Number.isInteger(s.stage) && s.stage >= 0 && s.stage < stages.length && Array.isArray(s.attempts) && Array.isArray(s.visited) && s.hints ? s : initialGarden(); }
   catch { return initialGarden(); }
 }
 export function gardenSummary() {
@@ -13,7 +14,7 @@ export function openGarden(root, onExit) {
   let s = loadGarden();
   let mode = 'area', edge = 0;
   const persist = () => {
-    try { localStorage.setItem(KEY, JSON.stringify(s)); }
+    try { s = localData.saveGarden(s); }
     catch { root.querySelector('#save-note').textContent = 'Your browser could not save this step. You can keep exploring, but it may not survive a reload.'; }
   };
   const titles = ['Could the same garden need less fence?', 'Change the shape. What stays the same?', 'Inside space or outside edge?', 'Try it with a new rectangle', 'Take the idea into a room', 'Make your own counterexample'];
@@ -67,7 +68,7 @@ export function openGarden(root, onExit) {
   }
   function helpUI(){return '<div class="garden-help"><button id="hint">Give me a clue</button><p id="hint-text" aria-live="polite"></p></div>';}
   function wireHelp(hints){const stage=stages[s.stage];const count=s.hints[stage]||0;if(count)root.querySelector('#hint-text').textContent=hints[Math.min(count,3)-1];root.querySelector('#hint').onclick=()=>{s.hints[stage]=Math.min(3,(s.hints[stage]||0)+1);root.querySelector('#hint-text').textContent=hints[s.hints[stage]-1];persist();};}
-  function attempt(correct,data){const stage=stages[s.stage];s.attempts.push({stage,correct,supported:!!s.hints[stage]||s.attempts.some(a=>a.stage===stage),data,ts:new Date().toISOString()});persist();}
+  function attempt(correct,data){const stage=stages[s.stage];s.attempts.push({id:crypto.randomUUID(),stage,correct,supported:!!s.hints[stage]||s.attempts.some(a=>a.stage===stage),data,ts:new Date().toISOString()});persist();}
   function feedback(text){root.querySelector('#answer-feedback').textContent=text;root.querySelector('#answer-feedback').className='feedback';}
   function next(){s.stage=Math.min(stages.length-1,s.stage+1);persist();draw();}
   function close(){persist();root.innerHTML='<section class="card"><div class="eyebrow">A good place to pause</div><h2>Ideas grow when you explore them.</h2><p>You can come back to the investigation. Outside the app, try making two shapes with the same length of string.</p><button id="back-home" class="primary">All done</button></section>';root.querySelector('#back-home').onclick=onExit;}
