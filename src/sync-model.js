@@ -43,7 +43,7 @@ export function mergeMetadata(a, b) {
     placed: !!(a.profile?.placed || b.profile?.placed),
     // This is a scheduling cursor, not a count of unique sessions.
     sessionsStarted: Math.max(a.profile?.sessionsStarted||0,b.profile?.sessionsStarted||0),
-  } : null, garden: { ...later, stage: Math.max(ga.stage||0,gb.stage||0), completed:!!(ga.completed||gb.completed),
+  } : null, garden: { ...later, stage: (ga.updatedAt || gb.updatedAt) ? later.stage : Math.max(ga.stage||0,gb.stage||0), completed:!!(ga.completed||gb.completed),
     hints, visited:[...new Set([...(ga.visited||[]),...(gb.visited||[])])] } };
 }
 export function hydrate(meta, records) {
