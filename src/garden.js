@@ -13,7 +13,7 @@ export function gardenSummary() {
 }
 export function openGarden(root, onExit) {
   let s = loadGarden();
-  let mode = 'area', edge = 0;
+  let mode = 'area', edge = 3;
   const persist = () => {
     try { s = localData.saveGarden(s); }
     catch { root.querySelector('#save-note').textContent = 'Your browser could not save this step. You can keep exploring, but it may not survive a reload.'; }
@@ -35,10 +35,10 @@ export function openGarden(root, onExit) {
       body.querySelectorAll('[data-predict]').forEach(b => b.onclick = () => { s.prediction=b.dataset.predict; next(); });
     }
     if (stage === 'explore') {
-      body.innerHTML = `<p>Try different layouts. Count the tiles inside, then follow the outside edge. Do internal joins need a fence?</p><div class="garden-controls">${[12,8,6].map(w=>`<button data-shape="${w}" aria-pressed="${s.width===w}">${w} × ${24/w}</button>`).join('')}</div>${picture(s.width,24/s.width,s.revealed)}<div class="garden-controls"><button id="reveal">${s.revealed?'Hide':'Reveal'} measurements</button><button id="mode">${mode==='area'?'Follow the edge':'Show the tiles'}</button>${mode==='edge'?'<button id="edge">Next side</button>':''}</div><p id="edge-note" class="small">${mode==='edge'?['Top','Right','Bottom','Left'][edge]+' side: '+(edge%2?24/s.width:s.width)+' m. Only the outside boundary counts.':'The tiles show the space covered, not the distance around.'}</p><div class="actions">${button('continue','What did we notice?')}</div>`;
-      body.querySelectorAll('[data-shape]').forEach(b=>b.onclick=()=>{s.width=+b.dataset.shape;if(!s.visited.includes(s.width))s.visited.push(s.width);persist();draw();});
+      body.innerHTML = `<p>Try different layouts. Count the tiles inside, then follow the outside edge. Do internal joins need a fence?</p><div class="garden-controls">${[12,8,6].map(w=>`<button data-shape="${w}" aria-pressed="${s.width===w}">${w} × ${24/w}</button>`).join('')}</div>${picture(s.width,24/s.width,s.revealed)}<div class="garden-controls"><button id="reveal">${s.revealed?'Hide':'Reveal'} measurements</button><button id="mode">${mode==='area'?'Follow the edge':'Show the tiles'}</button>${mode==='edge'?`<button id="edge">${edge===3?'Trace side by side':'Add the next side'}</button>`:''}</div><p id="edge-note" class="small">${mode==='edge'?(edge===3?'The whole perimeter: ':['Top side: ','Top + right sides: ','Top + right + bottom sides: '][edge])+[s.width,24/s.width,s.width,24/s.width].slice(0,edge+1).join(' + ')+' = '+[s.width,24/s.width,s.width,24/s.width].slice(0,edge+1).reduce((a,b)=>a+b,0)+' m. Only the outside boundary counts.':'The tiles show the space covered, not the distance around.'}</p><div class="actions">${button('continue','What did we notice?')}</div>`;
+      body.querySelectorAll('[data-shape]').forEach(b=>b.onclick=()=>{s.width=+b.dataset.shape;edge=3;if(!s.visited.includes(s.width))s.visited.push(s.width);persist();draw();});
       body.querySelector('#reveal').onclick=()=>{s.revealed=!s.revealed;if(!s.visited.includes(s.width))s.visited.push(s.width);persist();draw();};
-      body.querySelector('#mode').onclick=()=>{mode=mode==='area'?'edge':'area';draw();};
+      body.querySelector('#mode').onclick=()=>{mode=mode==='area'?'edge':'area';edge=3;draw();};
       if(body.querySelector('#edge'))body.querySelector('#edge').onclick=()=>{edge=(edge+1)%4;draw();};
       body.querySelector('#continue').onclick=next;
     }
@@ -70,7 +70,7 @@ export function openGarden(root, onExit) {
   function wireHelp(hints){const stage=stages[s.stage];const count=s.hints[stage]||0;if(count)root.querySelector('#hint-text').textContent=hints[Math.min(count,3)-1];root.querySelector('#hint').onclick=()=>{s.hints[stage]=Math.min(3,(s.hints[stage]||0)+1);root.querySelector('#hint-text').textContent=hints[s.hints[stage]-1];persist();};}
   function attempt(correct,data){const stage=stages[s.stage];s.attempts.push({id:crypto.randomUUID(),stage,correct,supported:!!s.hints[stage]||s.attempts.some(a=>a.stage===stage),data,ts:new Date().toISOString()});persist();}
   function feedback(text){root.querySelector('#answer-feedback').textContent=text;root.querySelector('#answer-feedback').className='feedback';}
-  function next(){s.stage=Math.min(stages.length-1,s.stage+1);persist();draw();}
+  function next(){mode='area';edge=3;s.stage=Math.min(stages.length-1,s.stage+1);persist();draw();}
   function close(){persist();root.innerHTML='<section class="card"><div class="eyebrow">A good place to pause</div><h2>Ideas grow when you explore them.</h2><p>You can come back to the investigation. Outside the app, try making two shapes with the same length of string.</p><button id="back-home" class="primary">All done</button></section>';root.querySelector('#back-home').onclick=onExit;}
   draw();
 }

@@ -13,10 +13,14 @@ test('every supported rectangle has explicitly sized and painted tiles', () => {
     assert(!markup.includes('<i>'));
   }
 });
-test('boundary highlight traverses all four outside sides',()=>{
-  const paths=Array.from({length:4},(_,edge)=>gardenPicture(6,4,'edge',edge).match(/<line[^>]+>/)[0]);
-  assert.equal(new Set(paths).size,4);
-  assert(paths[0].includes('x1="5" y1="5" x2="197" y2="5"'));
-  assert(paths[2].includes('x1="197" y1="133" x2="5" y2="133"'));
+test('following the edge shows the whole perimeter and tracing retains earlier sides',()=>{
+  const lines=markup=>[...markup.matchAll(/<line[^>]+>/g)].map(m=>m[0]);
+  const whole=lines(gardenPicture(6,4,'edge'));
+  assert.equal(whole.length,4);
+  for(let edge=0;edge<4;edge++) {
+    assert.deepEqual(lines(gardenPicture(6,4,'edge',edge)),whole.slice(0,edge+1));
+  }
+  assert(whole[0].includes('x1="5" y1="5" x2="197" y2="5"'));
+  assert(whole[2].includes('x1="197" y1="133" x2="5" y2="133"'));
   assert(!gardenPicture(6,4).includes('<line'));
 });
