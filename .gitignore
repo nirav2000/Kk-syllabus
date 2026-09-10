@@ -1,0 +1,8 @@
+node_modules/
+functions/node_modules/
+.env
+.env.*
+functions/.env*
+functions/.secret*
+firebase-debug.log
+public/

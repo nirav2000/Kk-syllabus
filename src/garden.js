@@ -1,4 +1,5 @@
 import { gardenPicture } from './garden-picture.js';
+import { createClock } from './attempts.js';
 import { localData } from './local-data.js';
 import { rectangle, validPair, initialGarden, stages, evidence } from './garden-model.js';
 
@@ -12,6 +13,12 @@ export function gardenSummary() {
   return `<h3>Area & perimeter investigation</h3><p class="small">Different shapes explored: ${e.explored ? 'yes' : 'not yet'}.<br>Applying the idea: ${e.applied}.<br>New-context question: ${e.transferred}.<br>Own counterexample built: ${e.created ? 'yes' : 'not yet'}.</p><p class="small">This is lesson evidence, not a mastery certificate. Spoken explanations are not recorded or automatically assessed.</p>`;
 }
 export function openGarden(root, onExit) {
+  let clock=createClock(),parentPaused=false,extraSupport=false;
+  const sessionId=crypto.randomUUID();
+  const pause=()=>{parentPaused=true;clock.pause();},resume=()=>{parentPaused=false;if(!document.hidden)clock.resume();};
+  const visibility=()=>{if(document.hidden)clock.pause();else if(!parentPaused)clock.resume();};
+  document.addEventListener('visibilitychange',visibility);
+  const dispose=()=>{clock.pause();document.removeEventListener('visibilitychange',visibility);};
   let s = loadGarden();
   let mode = 'area', edge = 3;
   const persist = () => {
@@ -68,9 +75,10 @@ export function openGarden(root, onExit) {
   }
   function helpUI(){return '<div class="garden-help"><button id="hint">Give me a clue</button><p id="hint-text" aria-live="polite"></p></div>';}
   function wireHelp(hints){const stage=stages[s.stage];const count=s.hints[stage]||0;if(count)root.querySelector('#hint-text').textContent=hints[Math.min(count,3)-1];root.querySelector('#hint').onclick=()=>{s.hints[stage]=Math.min(3,(s.hints[stage]||0)+1);root.querySelector('#hint-text').textContent=hints[s.hints[stage]-1];persist();};}
-  function attempt(correct,data){const stage=stages[s.stage];s.attempts.push({id:crypto.randomUUID(),stage,correct,supported:!!s.hints[stage]||s.attempts.some(a=>a.stage===stage),data,ts:new Date().toISOString()});persist();}
+  function attempt(correct,data){const stage=stages[s.stage];s.attempts.push({id:crypto.randomUUID(),stage,correct,supported:extraSupport||!!s.hints[stage]||s.attempts.some(a=>a.stage===stage),data,ts:new Date().toISOString(),...clock.read(),sessionId,stem:titles[s.stage]});persist();clock=createClock();}
   function feedback(text){root.querySelector('#answer-feedback').textContent=text;root.querySelector('#answer-feedback').className='feedback';}
-  function next(){mode='area';edge=3;s.stage=Math.min(stages.length-1,s.stage+1);persist();draw();}
-  function close(){persist();root.innerHTML='<section class="card"><div class="eyebrow">A good place to pause</div><h2>Ideas grow when you explore them.</h2><p>You can come back to the investigation. Outside the app, try making two shapes with the same length of string.</p><button id="back-home" class="primary">All done</button></section>';root.querySelector('#back-home').onclick=onExit;}
+  function next(){mode='area';edge=3;extraSupport=false;clock=createClock();s.stage=Math.min(stages.length-1,s.stage+1);persist();draw();}
+  function close(){dispose();persist();root.innerHTML='<section class="card"><div class="eyebrow">A good place to pause</div><h2>Ideas grow when you explore them.</h2><p>You can come back to the investigation. Outside the app, try making two shapes with the same length of string.</p><button id="back-home" class="primary">All done</button></section>';root.querySelector('#back-home').onclick=onExit;}
   draw();
+  return {pause,resume,dispose,markSupported:()=>{extraSupport=true;}};
 }

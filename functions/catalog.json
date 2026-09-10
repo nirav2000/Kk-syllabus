@@ -1,0 +1,1262 @@
+[
+  {
+    "id": "m1",
+    "title": "Place value",
+    "question": "Value of 6 in 364?",
+    "answer": "60",
+    "hint": "Check the hundreds, tens and ones columns."
+  },
+  {
+    "id": "m2",
+    "title": "Place value",
+    "question": "5 hundreds, 2 tens and 8 ones?",
+    "answer": "528",
+    "hint": "Build hundreds, then tens, then ones."
+  },
+  {
+    "id": "m3",
+    "title": "Place value",
+    "question": "10 more than 796?",
+    "answer": "806",
+    "hint": "Adding ten changes the tens column."
+  },
+  {
+    "id": "m4",
+    "title": "Mental calculation",
+    "question": "46 + 20?",
+    "answer": "66",
+    "hint": "Add two tens and keep the ones."
+  },
+  {
+    "id": "m5",
+    "title": "Mental calculation",
+    "question": "83 − 27?",
+    "answer": "56",
+    "hint": "Subtract 20, then 7."
+  },
+  {
+    "id": "m6",
+    "title": "Mental calculation",
+    "question": "128 books plus 47 more?",
+    "answer": "175",
+    "hint": "Add 40, then 7."
+  },
+  {
+    "id": "m7",
+    "title": "Multiplication structure",
+    "question": "7 × 4?",
+    "answer": "28",
+    "hint": "Think of seven groups of four."
+  },
+  {
+    "id": "m8",
+    "title": "Multiplication structure",
+    "question": "If 6 × 8 = 48, what is 12 × 8?",
+    "answer": "96",
+    "hint": "Doubling a factor doubles the product."
+  },
+  {
+    "id": "m9",
+    "title": "Multiplication structure",
+    "question": "9 trays hold 14 seedlings each. Total?",
+    "answer": "126",
+    "hint": "Split 14 into 10 and 4."
+  },
+  {
+    "id": "m10",
+    "title": "Equivalent fractions",
+    "question": "Which equals 1/2?",
+    "answer": "3/6",
+    "hint": "The numerator is half the denominator."
+  },
+  {
+    "id": "m11",
+    "title": "Equivalent fractions",
+    "question": "Complete: 3/4 = ?/12",
+    "answer": "9",
+    "hint": "Multiply top and bottom by 3."
+  },
+  {
+    "id": "m12",
+    "title": "Equivalent fractions",
+    "question": "Which is greater: 5/8 or 2/3?",
+    "answer": "2/3",
+    "hint": "Compare with a common denominator."
+  },
+  {
+    "id": "m13",
+    "title": "Perimeter and area",
+    "question": "Perimeter of a 7 cm by 3 cm rectangle?",
+    "answer": "20 cm",
+    "hint": "Add all four sides."
+  },
+  {
+    "id": "m14",
+    "title": "Perimeter and area",
+    "question": "Area of a 9 m by 4 m rectangle?",
+    "answer": "36 m²",
+    "hint": "Multiply length by width."
+  },
+  {
+    "id": "m15",
+    "title": "Perimeter and area",
+    "question": "A square has area 64 cm². Its perimeter?",
+    "answer": "32 cm",
+    "hint": "Find the side, then count four sides."
+  },
+  {
+    "id": "e1",
+    "title": "Words in context",
+    "question": "“The path was narrow, so we walked in single file.” Narrow means…",
+    "answer": "not wide",
+    "hint": "Only one person could fit across."
+  },
+  {
+    "id": "e2",
+    "title": "Words in context",
+    "question": "“Mira was reluctant to enter, but eventually stepped inside.” Reluctant means…",
+    "answer": "unwilling",
+    "hint": "“But” signals she did not want to at first."
+  },
+  {
+    "id": "e3",
+    "title": "Words in context",
+    "question": "“The evidence was inconclusive, so the debate continued.” Inconclusive means…",
+    "answer": "not proving a clear result",
+    "hint": "The debate was not settled."
+  },
+  {
+    "id": "e4",
+    "title": "Sentence structure",
+    "question": "Verb in “The silver fish darted away”?",
+    "answer": "darted",
+    "hint": "Find the action."
+  },
+  {
+    "id": "e5",
+    "title": "Sentence structure",
+    "question": "One dog owns the bowl. Which sentence uses the possessive apostrophe correctly?",
+    "answer": "The dog's bowl was empty.",
+    "hint": "One dog owns the bowl: apostrophe + s."
+  },
+  {
+    "id": "e6",
+    "title": "Sentence structure",
+    "question": "Subordinate clause in “Although it rained, we walked.”",
+    "answer": "Although it rained",
+    "hint": "It cannot stand alone here."
+  },
+  {
+    "id": "e7",
+    "title": "Inference from evidence",
+    "question": "“Amir zipped his coat and pulled his hat low.” The weather is probably…",
+    "answer": "cold",
+    "hint": "The clothing gives a clue."
+  },
+  {
+    "id": "e8",
+    "title": "Inference from evidence",
+    "question": "“Lena checked the clock again. Her foot tapped.” She is probably…",
+    "answer": "anxious or impatient",
+    "hint": "Both actions show tension."
+  },
+  {
+    "id": "e9",
+    "title": "Inference from evidence",
+    "question": "“Jon hid the cracked trophy behind books.” We can infer…",
+    "answer": "he may be hiding damage",
+    "hint": "Its condition and position are evidence."
+  },
+  {
+    "id": "e10",
+    "title": "Summarising",
+    "question": "A paragraph explains how bees turn nectar into honey. Best summary?",
+    "answer": "How bees make honey",
+    "hint": "Keep the central idea."
+  },
+  {
+    "id": "e11",
+    "title": "Summarising",
+    "question": "Someone misses a bus, cycles through rain, and reaches a concert. Best summary?",
+    "answer": "They overcome delays to reach a concert",
+    "hint": "Keep the goal and obstacle."
+  },
+  {
+    "id": "e12",
+    "title": "Summarising",
+    "question": "Which detail is usually omitted from a summary?",
+    "answer": "colour of a minor object",
+    "hint": "Decoration rarely changes the main idea."
+  },
+  {
+    "id": "e13",
+    "title": "Precise, cohesive writing",
+    "question": "Most precise: “The fox ___ across the field.”",
+    "answer": "sprinted",
+    "hint": "Choose a verb that shows how."
+  },
+  {
+    "id": "e14",
+    "title": "Precise, cohesive writing",
+    "question": "Contrast: “The route was longer; ___, it was safer.”",
+    "answer": "however",
+    "hint": "The ideas contrast."
+  },
+  {
+    "id": "e15",
+    "title": "Precise, cohesive writing",
+    "question": "Clearer version of “When Ava met Priya, she carried a violin.”",
+    "answer": "Priya carried a violin when Ava met her.",
+    "hint": "Naming Priya removes ambiguity."
+  },
+  {
+    "id": "M-ROUND-1-1",
+    "title": "Rounding on a number line",
+    "question": "Round 133 to the nearest 10.",
+    "answer": "130",
+    "hint": "Find the two multiples of 10 around 133, then their midpoint."
+  },
+  {
+    "id": "M-ROUND-1-2",
+    "title": "Rounding on a number line",
+    "question": "Round 145 to the nearest 10.",
+    "answer": "150",
+    "hint": "Find the two multiples of 10 around 145, then their midpoint."
+  },
+  {
+    "id": "M-ROUND-1-3",
+    "title": "Rounding on a number line",
+    "question": "Round 157 to the nearest 10.",
+    "answer": "160",
+    "hint": "Find the two multiples of 10 around 157, then their midpoint."
+  },
+  {
+    "id": "M-ROUND-2-1",
+    "title": "Rounding on a number line",
+    "question": "Round 1330 to the nearest 100.",
+    "answer": "1300",
+    "hint": "Find the two multiples of 100 around 1330, then their midpoint."
+  },
+  {
+    "id": "M-ROUND-2-2",
+    "title": "Rounding on a number line",
+    "question": "Round 1450 to the nearest 100.",
+    "answer": "1500",
+    "hint": "Find the two multiples of 100 around 1450, then their midpoint."
+  },
+  {
+    "id": "M-ROUND-2-3",
+    "title": "Rounding on a number line",
+    "question": "Round 1570 to the nearest 100.",
+    "answer": "1600",
+    "hint": "Find the two multiples of 100 around 1570, then their midpoint."
+  },
+  {
+    "id": "M-ROUND-3-1",
+    "title": "Rounding on a number line",
+    "question": "Round 13300 to the nearest 1000.",
+    "answer": "13000",
+    "hint": "Find the two multiples of 1000 around 13300, then their midpoint."
+  },
+  {
+    "id": "M-ROUND-3-2",
+    "title": "Rounding on a number line",
+    "question": "Round 14500 to the nearest 1000.",
+    "answer": "15000",
+    "hint": "Find the two multiples of 1000 around 14500, then their midpoint."
+  },
+  {
+    "id": "M-ROUND-3-3",
+    "title": "Rounding on a number line",
+    "question": "Round 15700 to the nearest 1000.",
+    "answer": "16000",
+    "hint": "Find the two multiples of 1000 around 15700, then their midpoint."
+  },
+  {
+    "id": "M-DECIMAL-1-1",
+    "title": "Decimals and place value",
+    "question": "13 tenths + 3 tenths = how many tenths?",
+    "answer": "16",
+    "hint": "Both amounts are in tenths, so combine their counts. Keep the unit tenths."
+  },
+  {
+    "id": "M-DECIMAL-1-2",
+    "title": "Decimals and place value",
+    "question": "16 tenths + 4 tenths = how many tenths?",
+    "answer": "20",
+    "hint": "Both amounts are in tenths, so combine their counts. Keep the unit tenths."
+  },
+  {
+    "id": "M-DECIMAL-1-3",
+    "title": "Decimals and place value",
+    "question": "19 tenths + 5 tenths = how many tenths?",
+    "answer": "24",
+    "hint": "Both amounts are in tenths, so combine their counts. Keep the unit tenths."
+  },
+  {
+    "id": "M-DECIMAL-2-1",
+    "title": "Decimals and place value",
+    "question": "23 tenths + 3 tenths = how many tenths?",
+    "answer": "26",
+    "hint": "Both amounts are in tenths, so combine their counts. Keep the unit tenths."
+  },
+  {
+    "id": "M-DECIMAL-2-2",
+    "title": "Decimals and place value",
+    "question": "26 tenths + 4 tenths = how many tenths?",
+    "answer": "30",
+    "hint": "Both amounts are in tenths, so combine their counts. Keep the unit tenths."
+  },
+  {
+    "id": "M-DECIMAL-2-3",
+    "title": "Decimals and place value",
+    "question": "29 tenths + 5 tenths = how many tenths?",
+    "answer": "34",
+    "hint": "Both amounts are in tenths, so combine their counts. Keep the unit tenths."
+  },
+  {
+    "id": "M-DECIMAL-3-1",
+    "title": "Decimals and place value",
+    "question": "33 tenths + 3 tenths = how many tenths?",
+    "answer": "36",
+    "hint": "Both amounts are in tenths, so combine their counts. Keep the unit tenths."
+  },
+  {
+    "id": "M-DECIMAL-3-2",
+    "title": "Decimals and place value",
+    "question": "36 tenths + 4 tenths = how many tenths?",
+    "answer": "40",
+    "hint": "Both amounts are in tenths, so combine their counts. Keep the unit tenths."
+  },
+  {
+    "id": "M-DECIMAL-3-3",
+    "title": "Decimals and place value",
+    "question": "39 tenths + 5 tenths = how many tenths?",
+    "answer": "44",
+    "hint": "Both amounts are in tenths, so combine their counts. Keep the unit tenths."
+  },
+  {
+    "id": "M-FRACAMT-1-1",
+    "title": "Fractions of amounts",
+    "question": "What is 1/3 of 15?",
+    "answer": "5",
+    "hint": "Share 15 into 3 equal groups, then take 1 groups."
+  },
+  {
+    "id": "M-FRACAMT-1-2",
+    "title": "Fractions of amounts",
+    "question": "What is 1/3 of 18?",
+    "answer": "6",
+    "hint": "Share 18 into 3 equal groups, then take 1 groups."
+  },
+  {
+    "id": "M-FRACAMT-1-3",
+    "title": "Fractions of amounts",
+    "question": "What is 1/3 of 21?",
+    "answer": "7",
+    "hint": "Share 21 into 3 equal groups, then take 1 groups."
+  },
+  {
+    "id": "M-FRACAMT-2-1",
+    "title": "Fractions of amounts",
+    "question": "What is 2/4 of 20?",
+    "answer": "10",
+    "hint": "Share 20 into 4 equal groups, then take 2 groups."
+  },
+  {
+    "id": "M-FRACAMT-2-2",
+    "title": "Fractions of amounts",
+    "question": "What is 2/4 of 24?",
+    "answer": "12",
+    "hint": "Share 24 into 4 equal groups, then take 2 groups."
+  },
+  {
+    "id": "M-FRACAMT-2-3",
+    "title": "Fractions of amounts",
+    "question": "What is 2/4 of 28?",
+    "answer": "14",
+    "hint": "Share 28 into 4 equal groups, then take 2 groups."
+  },
+  {
+    "id": "M-FRACAMT-3-1",
+    "title": "Fractions of amounts",
+    "question": "What is 3/5 of 25?",
+    "answer": "15",
+    "hint": "Share 25 into 5 equal groups, then take 3 groups."
+  },
+  {
+    "id": "M-FRACAMT-3-2",
+    "title": "Fractions of amounts",
+    "question": "What is 3/5 of 30?",
+    "answer": "18",
+    "hint": "Share 30 into 5 equal groups, then take 3 groups."
+  },
+  {
+    "id": "M-FRACAMT-3-3",
+    "title": "Fractions of amounts",
+    "question": "What is 3/5 of 35?",
+    "answer": "21",
+    "hint": "Share 35 into 5 equal groups, then take 3 groups."
+  },
+  {
+    "id": "M-PERCENT-1-1",
+    "title": "Percentages as parts of one hundred",
+    "question": "What is 10% of 120?",
+    "answer": "12",
+    "hint": "Percent means out of 100. Multiply 120 by 10, then divide by 100."
+  },
+  {
+    "id": "M-PERCENT-1-2",
+    "title": "Percentages as parts of one hundred",
+    "question": "What is 10% of 160?",
+    "answer": "16",
+    "hint": "Percent means out of 100. Multiply 160 by 10, then divide by 100."
+  },
+  {
+    "id": "M-PERCENT-1-3",
+    "title": "Percentages as parts of one hundred",
+    "question": "What is 10% of 200?",
+    "answer": "20",
+    "hint": "Percent means out of 100. Multiply 200 by 10, then divide by 100."
+  },
+  {
+    "id": "M-PERCENT-2-1",
+    "title": "Percentages as parts of one hundred",
+    "question": "What is 25% of 120?",
+    "answer": "30",
+    "hint": "Percent means out of 100. Multiply 120 by 25, then divide by 100."
+  },
+  {
+    "id": "M-PERCENT-2-2",
+    "title": "Percentages as parts of one hundred",
+    "question": "What is 25% of 160?",
+    "answer": "40",
+    "hint": "Percent means out of 100. Multiply 160 by 25, then divide by 100."
+  },
+  {
+    "id": "M-PERCENT-2-3",
+    "title": "Percentages as parts of one hundred",
+    "question": "What is 25% of 200?",
+    "answer": "50",
+    "hint": "Percent means out of 100. Multiply 200 by 25, then divide by 100."
+  },
+  {
+    "id": "M-PERCENT-3-1",
+    "title": "Percentages as parts of one hundred",
+    "question": "What is 15% of 120?",
+    "answer": "18",
+    "hint": "Percent means out of 100. Multiply 120 by 15, then divide by 100."
+  },
+  {
+    "id": "M-PERCENT-3-2",
+    "title": "Percentages as parts of one hundred",
+    "question": "What is 15% of 160?",
+    "answer": "24",
+    "hint": "Percent means out of 100. Multiply 160 by 15, then divide by 100."
+  },
+  {
+    "id": "M-PERCENT-3-3",
+    "title": "Percentages as parts of one hundred",
+    "question": "What is 15% of 200?",
+    "answer": "30",
+    "hint": "Percent means out of 100. Multiply 200 by 15, then divide by 100."
+  },
+  {
+    "id": "M-TIME-1-1",
+    "title": "Elapsed time",
+    "question": "How many minutes from 09:10 to 09:46 on the same morning?",
+    "answer": "36",
+    "hint": "Count forwards. An hour contains 60 minutes, not 100."
+  },
+  {
+    "id": "M-TIME-1-2",
+    "title": "Elapsed time",
+    "question": "How many minutes from 09:20 to 09:57 on the same morning?",
+    "answer": "37",
+    "hint": "Count forwards. An hour contains 60 minutes, not 100."
+  },
+  {
+    "id": "M-TIME-1-3",
+    "title": "Elapsed time",
+    "question": "How many minutes from 09:30 to 10:08 on the same morning?",
+    "answer": "38",
+    "hint": "Count forwards. An hour contains 60 minutes, not 100."
+  },
+  {
+    "id": "M-TIME-2-1",
+    "title": "Elapsed time",
+    "question": "How many minutes from 09:10 to 10:06 on the same morning?",
+    "answer": "56",
+    "hint": "Count forwards. An hour contains 60 minutes, not 100."
+  },
+  {
+    "id": "M-TIME-2-2",
+    "title": "Elapsed time",
+    "question": "How many minutes from 09:20 to 10:17 on the same morning?",
+    "answer": "57",
+    "hint": "Count forwards. An hour contains 60 minutes, not 100."
+  },
+  {
+    "id": "M-TIME-2-3",
+    "title": "Elapsed time",
+    "question": "How many minutes from 09:30 to 10:28 on the same morning?",
+    "answer": "58",
+    "hint": "Count forwards. An hour contains 60 minutes, not 100."
+  },
+  {
+    "id": "M-TIME-3-1",
+    "title": "Elapsed time",
+    "question": "How many minutes from 09:10 to 10:26 on the same morning?",
+    "answer": "76",
+    "hint": "Count forwards. An hour contains 60 minutes, not 100."
+  },
+  {
+    "id": "M-TIME-3-2",
+    "title": "Elapsed time",
+    "question": "How many minutes from 09:20 to 10:37 on the same morning?",
+    "answer": "77",
+    "hint": "Count forwards. An hour contains 60 minutes, not 100."
+  },
+  {
+    "id": "M-TIME-3-3",
+    "title": "Elapsed time",
+    "question": "How many minutes from 09:30 to 10:48 on the same morning?",
+    "answer": "78",
+    "hint": "Count forwards. An hour contains 60 minutes, not 100."
+  },
+  {
+    "id": "M-RATIO-1-1",
+    "title": "Ratio and equal shares",
+    "question": "Red to blue beads are 1:2. There are 12 beads altogether. How many are red?",
+    "answer": "4",
+    "hint": "There are 3 equal shares. Find one share, then take 1 shares."
+  },
+  {
+    "id": "M-RATIO-1-2",
+    "title": "Ratio and equal shares",
+    "question": "Red to blue beads are 1:3. There are 20 beads altogether. How many are red?",
+    "answer": "5",
+    "hint": "There are 4 equal shares. Find one share, then take 1 shares."
+  },
+  {
+    "id": "M-RATIO-1-3",
+    "title": "Ratio and equal shares",
+    "question": "Red to blue beads are 1:4. There are 30 beads altogether. How many are red?",
+    "answer": "6",
+    "hint": "There are 5 equal shares. Find one share, then take 1 shares."
+  },
+  {
+    "id": "M-RATIO-2-1",
+    "title": "Ratio and equal shares",
+    "question": "Red to blue beads are 2:2. There are 16 beads altogether. How many are red?",
+    "answer": "8",
+    "hint": "There are 4 equal shares. Find one share, then take 2 shares."
+  },
+  {
+    "id": "M-RATIO-2-2",
+    "title": "Ratio and equal shares",
+    "question": "Red to blue beads are 2:3. There are 25 beads altogether. How many are red?",
+    "answer": "10",
+    "hint": "There are 5 equal shares. Find one share, then take 2 shares."
+  },
+  {
+    "id": "M-RATIO-2-3",
+    "title": "Ratio and equal shares",
+    "question": "Red to blue beads are 2:4. There are 36 beads altogether. How many are red?",
+    "answer": "12",
+    "hint": "There are 6 equal shares. Find one share, then take 2 shares."
+  },
+  {
+    "id": "M-RATIO-3-1",
+    "title": "Ratio and equal shares",
+    "question": "Red to blue beads are 3:2. There are 20 beads altogether. How many are red?",
+    "answer": "12",
+    "hint": "There are 5 equal shares. Find one share, then take 3 shares."
+  },
+  {
+    "id": "M-RATIO-3-2",
+    "title": "Ratio and equal shares",
+    "question": "Red to blue beads are 3:3. There are 30 beads altogether. How many are red?",
+    "answer": "15",
+    "hint": "There are 6 equal shares. Find one share, then take 3 shares."
+  },
+  {
+    "id": "M-RATIO-3-3",
+    "title": "Ratio and equal shares",
+    "question": "Red to blue beads are 3:4. There are 42 beads altogether. How many are red?",
+    "answer": "18",
+    "hint": "There are 7 equal shares. Find one share, then take 3 shares."
+  },
+  {
+    "id": "M-ALG-1-1",
+    "title": "Missing numbers and inverse operations",
+    "question": "Find x: 3 × x = 15.",
+    "answer": "5",
+    "hint": "Undo multiplication by 3 with division. Then check by multiplying."
+  },
+  {
+    "id": "M-ALG-1-2",
+    "title": "Missing numbers and inverse operations",
+    "question": "Find x: 3 × x = 18.",
+    "answer": "6",
+    "hint": "Undo multiplication by 3 with division. Then check by multiplying."
+  },
+  {
+    "id": "M-ALG-1-3",
+    "title": "Missing numbers and inverse operations",
+    "question": "Find x: 3 × x = 21.",
+    "answer": "7",
+    "hint": "Undo multiplication by 3 with division. Then check by multiplying."
+  },
+  {
+    "id": "M-ALG-2-1",
+    "title": "Missing numbers and inverse operations",
+    "question": "Find x: 4 × x = 20.",
+    "answer": "5",
+    "hint": "Undo multiplication by 4 with division. Then check by multiplying."
+  },
+  {
+    "id": "M-ALG-2-2",
+    "title": "Missing numbers and inverse operations",
+    "question": "Find x: 4 × x = 24.",
+    "answer": "6",
+    "hint": "Undo multiplication by 4 with division. Then check by multiplying."
+  },
+  {
+    "id": "M-ALG-2-3",
+    "title": "Missing numbers and inverse operations",
+    "question": "Find x: 4 × x = 28.",
+    "answer": "7",
+    "hint": "Undo multiplication by 4 with division. Then check by multiplying."
+  },
+  {
+    "id": "M-ALG-3-1",
+    "title": "Missing numbers and inverse operations",
+    "question": "Find x: 5 × x = 25.",
+    "answer": "5",
+    "hint": "Undo multiplication by 5 with division. Then check by multiplying."
+  },
+  {
+    "id": "M-ALG-3-2",
+    "title": "Missing numbers and inverse operations",
+    "question": "Find x: 5 × x = 30.",
+    "answer": "6",
+    "hint": "Undo multiplication by 5 with division. Then check by multiplying."
+  },
+  {
+    "id": "M-ALG-3-3",
+    "title": "Missing numbers and inverse operations",
+    "question": "Find x: 5 × x = 35.",
+    "answer": "7",
+    "hint": "Undo multiplication by 5 with division. Then check by multiplying."
+  },
+  {
+    "id": "word-said",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word said. Context: She said that the kite was blue.",
+    "answer": "spoke some words",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-come",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word come. Context: Please come to the table.",
+    "answer": "move towards this place",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-some",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word some. Context: There are some apples in the bowl.",
+    "answer": "an amount that is not exact",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-one",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word one. Context: There is one boat by the bank.",
+    "answer": "a single thing",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-once",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word once. Context: I have visited that park once.",
+    "answer": "on one occasion",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-friend",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word friend. Context: My friend helped me build a den.",
+    "answer": "someone you like and know well",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-school",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word school. Context: The school has a library.",
+    "answer": "a place where people learn together",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-house",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word house. Context: The house has a green door.",
+    "answer": "a building where people live",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-where",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word where. Context: Where did you put the map?",
+    "answer": "in or at what place",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-there",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word there. Context: Put the basket over there.",
+    "answer": "in or at that place",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-brave",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word brave. Context: The brave sailor asked for help in the storm.",
+    "answer": "willing to face something frightening",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-tiny",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word tiny. Context: A tiny seed lay on my hand.",
+    "answer": "very small",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-because",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word because. Context: We stayed inside because it rained.",
+    "answer": "for the reason that",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-beautiful",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word beautiful. Context: The beautiful garden was full of flowers.",
+    "answer": "very pleasing to look at or experience",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-people",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word people. Context: Several people waited for the bus.",
+    "answer": "human beings",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-again",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word again. Context: Read the sentence again.",
+    "answer": "one more time",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-every",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word every. Context: Every chair had a cushion.",
+    "answer": "each one of a group",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-could",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word could. Context: I could see the hill from the window.",
+    "answer": "was able to or might be able to",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-would",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word would. Context: I would sail if the wind returned.",
+    "answer": "used to describe an imagined action",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-should",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word should. Context: We should check the map before leaving.",
+    "answer": "used to say what is advisable",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-climb",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word climb. Context: We climb the steps to the tower.",
+    "answer": "move upwards using your hands or feet",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-quiet",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word quiet. Context: The quiet room helped us hear the clock.",
+    "answer": "making little noise",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-gentle",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word gentle. Context: Use a gentle touch with the young plant.",
+    "answer": "careful and not rough",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-enormous",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word enormous. Context: The enormous ship filled the harbour.",
+    "answer": "extremely large",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-accident",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word accident. Context: The broken cup was an accident.",
+    "answer": "an unexpected event that can cause damage",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-address",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word address. Context: Write the address on the envelope.",
+    "answer": "details of where someone lives or a place is",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-answer",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word answer. Context: Explain how you found your answer.",
+    "answer": "a reply to a question",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-appear",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word appear. Context: Stars appear as the sky grows dark.",
+    "answer": "come into sight",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-arrive",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word arrive. Context: We will arrive before lunch.",
+    "answer": "reach a place",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-believe",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word believe. Context: I believe the bridge is open.",
+    "answer": "think that something is true",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-bicycle",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word bicycle. Context: I parked my bicycle beside the gate.",
+    "answer": "a vehicle with two wheels driven by pedals",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-calendar",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word calendar. Context: Mark the trip on the calendar.",
+    "answer": "a chart showing days and months",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-certain",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word certain. Context: I am certain that two plus two is four.",
+    "answer": "sure about something",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-curious",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word curious. Context: The curious child examined the shell.",
+    "answer": "wanting to know or learn more",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-fragile",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word fragile. Context: Carry the fragile glass carefully.",
+    "answer": "easily broken or damaged",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-reluctant",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word reluctant. Context: She was reluctant to leave the warm room.",
+    "answer": "not willing or eager to do something",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-different",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word different. Context: The two leaves have different shapes.",
+    "answer": "not the same",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-difficult",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word difficult. Context: The difficult puzzle took several attempts.",
+    "answer": "needing effort or skill to do",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-disappear",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word disappear. Context: We watched the boat disappear into the mist.",
+    "answer": "stop being visible",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-experiment",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word experiment. Context: Our experiment compared two types of soil.",
+    "answer": "a test used to find something out",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-favourite",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word favourite. Context: This is my favourite story.",
+    "answer": "liked more than the others",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-knowledge",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word knowledge. Context: Reading expanded his knowledge of birds.",
+    "answer": "facts and understanding gained by learning",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-library",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word library. Context: I borrowed a book from the library.",
+    "answer": "a place where books are kept for people to use",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-ordinary",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word ordinary. Context: It looked like an ordinary stone.",
+    "answer": "usual rather than special",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-peculiar",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word peculiar. Context: A peculiar sound came from the old clock.",
+    "answer": "strange or unusual",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-separate",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word separate. Context: Keep the wet and dry towels separate.",
+    "answer": "apart rather than joined together",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-cautious",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word cautious. Context: The cautious walker tested the slippery step.",
+    "answer": "careful to avoid danger or mistakes",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-generous",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word generous. Context: The generous gardener shared her seeds.",
+    "answer": "willing to give or share",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-accommodate",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word accommodate. Context: The hall can accommodate fifty chairs.",
+    "answer": "provide enough space or what is needed",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-accompany",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word accompany. Context: An adult will accompany the group.",
+    "answer": "go somewhere with someone",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-achieve",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word achieve. Context: Small steps can help you achieve your aim.",
+    "answer": "succeed in doing something you worked towards",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-awkward",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word awkward. Context: The long box was awkward to carry.",
+    "answer": "difficult to handle or move comfortably",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-bargain",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word bargain. Context: The sturdy second-hand desk was a bargain.",
+    "answer": "something bought for a good price",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-category",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word category. Context: Put each animal in the correct category.",
+    "answer": "a group of things with shared features",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-conscience",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word conscience. Context: Her conscience prompted her to return the lost coin.",
+    "answer": "your sense of whether your actions are right or wrong",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-conscious",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word conscious. Context: He remained conscious after the fall.",
+    "answer": "awake and aware of what is happening",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-definite",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word definite. Context: We need a definite time to meet.",
+    "answer": "clear and certain",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-desperate",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word desperate. Context: The thirsty walkers were desperate for water.",
+    "answer": "feeling an urgent and serious need",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-diligent",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word diligent. Context: The diligent researcher checked each measurement.",
+    "answer": "working with steady care and effort",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-ambiguous",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word ambiguous. Context: The ambiguous message left us unsure which gate to use.",
+    "answer": "having more than one possible meaning",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-embarrass",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word embarrass. Context: Please do not embarrass anyone about a mistake.",
+    "answer": "make someone feel awkward or self-conscious",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-environment",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word environment. Context: A clean pond is a healthier environment for frogs.",
+    "answer": "the surroundings in which living things exist",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-exaggerate",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word exaggerate. Context: Do not exaggerate the size of the fish.",
+    "answer": "describe something as bigger or more extreme than it is",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-foreign",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word foreign. Context: The museum displayed foreign coins.",
+    "answer": "from another country",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-guarantee",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word guarantee. Context: The shop gave a guarantee with the clock.",
+    "answer": "a firm promise that something will happen or work",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-necessary",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word necessary. Context: Water is necessary for the plant to grow.",
+    "answer": "needed for a particular purpose",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-opportunity",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word opportunity. Context: The visit was an opportunity to ask questions.",
+    "answer": "a chance to do something",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-privilege",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word privilege. Context: Access to the private garden was a privilege.",
+    "answer": "a special right or advantage",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-rhythm",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word rhythm. Context: We clapped the rhythm of the song.",
+    "answer": "a repeated pattern of beats or movement",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-sufficient",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word sufficient. Context: We had sufficient rope to reach the post.",
+    "answer": "enough for what is needed",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-meticulous",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word meticulous. Context: Her meticulous notes recorded every change.",
+    "answer": "extremely careful about small details",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-resilient",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word resilient. Context: The resilient plant grew new leaves after the frost.",
+    "answer": "able to recover after difficulty or damage",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-benevolent",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word benevolent. Context: The benevolent donor paid for new library books.",
+    "answer": "kind and wishing to help others",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-coherent",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word coherent. Context: The explanation was coherent and easy to follow.",
+    "answer": "clear and logically connected",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-concise",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word concise. Context: Give a concise summary of the journey.",
+    "answer": "expressed clearly in few words",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-conspicuous",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word conspicuous. Context: The bright orange flag was conspicuous against the snow.",
+    "answer": "easy to notice",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-detrimental",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word detrimental. Context: Too little water is detrimental to these plants.",
+    "answer": "causing harm or damage",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-eloquent",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word eloquent. Context: Her eloquent speech explained why the park mattered.",
+    "answer": "able to express ideas clearly and effectively",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-ephemeral",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word ephemeral. Context: The ephemeral rainbow vanished within minutes.",
+    "answer": "lasting for only a short time",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-frugal",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word frugal. Context: The frugal cook used the remaining vegetables in soup.",
+    "answer": "careful to avoid wasting money or resources",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-impartial",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word impartial. Context: An impartial judge listens to both arguments.",
+    "answer": "fair and not favouring either side",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-inevitable",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word inevitable. Context: With no support left, the tower's collapse was inevitable.",
+    "answer": "certain to happen and unable to be avoided",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-plausible",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word plausible. Context: A loose wire was a plausible explanation for the fault.",
+    "answer": "seeming reasonable or possible",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-scrutinise",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word scrutinise. Context: Scrutinise the map before choosing a route.",
+    "answer": "examine very carefully",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-tenacious",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word tenacious. Context: The tenacious vine held tightly to the wall.",
+    "answer": "continuing firmly despite difficulty",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-transient",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word transient. Context: The shower was transient and sunshine soon returned.",
+    "answer": "remaining for only a short time",
+    "hint": "Explain meaning, letter patterns and a new example."
+  },
+  {
+    "id": "word-vigilant",
+    "title": "Word meaning and spelling",
+    "question": "Explain the word vigilant. Context: The vigilant lookout spotted the approaching rocks.",
+    "answer": "watchful for possible danger or problems",
+    "hint": "Explain meaning, letter patterns and a new example."
+  }
+]

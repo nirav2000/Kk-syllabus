@@ -14,9 +14,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: 22}
+      - run: npm ci --ignore-scripts
       - run: npm test
+      - name: Prepare public web files
+        run: |
+          mkdir -p public
+          cp index.html styles.css garden.css sw.js manifest.webmanifest public/
+          cp -r src public/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
-        with: {path: .}
+        with: {path: public}
       - id: deployment
         uses: actions/deploy-pages@v4

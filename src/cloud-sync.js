@@ -85,6 +85,13 @@ export async function startCloud() {
   try{await sdk();if(auth.currentUser?.uid!==OWNER_UID){publish({message:'Sign in again to resume cloud sync.'});return;}publish({signedIn:true});await syncNow();}
   catch(e){publish({message:errorMessage(e)});}
 }
+export async function requestExplanation(itemId,strategy) {
+  await sdk();
+  if(auth.currentUser?.uid!==OWNER_UID)throw new Error('Parent sign-in required');
+  const F=await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-functions.js');
+  const callable=F.httpsCallable(F.getFunctions(auth.app,'europe-west2'),'explain',{timeout:30000});
+  return (await callable({itemId,strategy})).data;
+}
 export function mountCloudPanel(element) {
   element.innerHTML='<h3>Save across devices</h3><p class="small">Each profile has separate cloud history. Sign in with the same parent account on each device, sync, then reopen the grown-up view to find its profiles.</p><p class="small" data-status role="status"></p><form class="cloud-form"><label>Parent email<input name="email" type="email" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button class="primary">Sign in & sync</button></form><div data-connected><button data-sync>Sync now</button> <button data-disconnect>Disconnect cloud</button><p class="small">Disconnecting keeps local progress. The parent PIN protects profile switching.</p></div>';
   const form=element.querySelector('form');

@@ -55,7 +55,7 @@ export function hydrate(meta, records) {
       if (kind !== 'quiz') continue;
       const objective = byItem(event.data?.itemId);
       if (event.type === 'answer' && objective && typeof event.data.correct === 'boolean') {
-        record(profile,objective.items.find(i=>i.id===event.data.itemId),objective,event.data.correct);
+        record(profile,objective.items.find(i=>i.id===event.data.itemId),objective,event.data.correct,{supported:!!event.data.supported});
         profile.events.pop(); profile.outbox.pop();
       }
       profile.events.push(event);

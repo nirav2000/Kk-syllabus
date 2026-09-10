@@ -1,0 +1,6 @@
+export const approaches={concrete:'Use a small hands-on demonstration.',steps:'Break the reasoning into small steps.',contrast:'Contrast a sound method with a tempting error.',transfer:'Use a different everyday context.'};
+export function allowedRequest(data,catalog){
+  if(!data||Object.keys(data).some(k=>!['itemId','strategy'].includes(k))||!Object.hasOwn(approaches,data.strategy))throw Error('Invalid request');
+  const item=catalog.find(i=>i.id===data.itemId);if(!item)throw Error('Unknown curriculum item');return item;
+}
+export function modelRequest(item,strategy,model){return {model,store:false,max_output_tokens:600,instructions:'Write a brief teaching explanation for a parent to review with a child. Explain why, using a concrete example and calm language. Needing help is normal. Stay strictly on the supplied curriculum. Do not request personal information, provide links, diagnose, or act as a companion. Use at most 180 words. Return a separate new practice question without its answer.',input:JSON.stringify({curriculum:item,approach:approaches[strategy]}),text:{format:{type:'json_schema',name:'teaching_explanation',strict:true,schema:{type:'object',properties:{explanation:{type:'string'},check:{type:'string'}},required:['explanation','check'],additionalProperties:false}}}};}
