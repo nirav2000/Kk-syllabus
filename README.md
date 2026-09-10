@@ -2,7 +2,7 @@
 
 A calm, adaptive KS2 maths and English learning app. It has no learner-visible scores, timers, streaks, year-group questions, or harsh wrong-answer marks.
 
-**Current release:** 17 maths/English objectives, 93 questions, and an 87-word spelling/vocabulary starter bank across Years 1–7 difficulty bands. New parent reports include active response times, topic/question drill-downs and attempt replay. See [current features and roadmap](docs/FEATURES.md) for precise coverage and limitations, including planned iPhone/iPad voice spelling. This is not yet a complete Year 1–7 or 11+ syllabus.
+**Current release code:** 17 maths/English objectives, 93 questions, and an 87-word spelling/vocabulary starter bank across Years 1–7 difficulty bands. New parent reports include active response times, topic/question drill-downs and attempt replay. See [current features and roadmap](docs/FEATURES.md) for precise coverage and limitations, including experimental parent-enabled voice spelling and clearer profile controls. This is not yet a complete Year 1–7 or 11+ syllabus.
 
 Features include adaptive sessions, rotating scheduler tie-breaks, prerequisite gates, mastery requiring hardest-tier evidence, later review, a PIN-gated grown-up dashboard, local persistence, and offline support. The original questions broadly align with England's national curriculum without reproducing proprietary scheme wording.
 
@@ -18,7 +18,7 @@ Open http://localhost:8000. The GitHub Pages build saves progress locally, with 
 
 ## Concept investigation: area and perimeter
 
-Open “Same garden. Different fence?” on the home screen. The lesson follows prediction, tile exploration, explicit explanation, numeric application, a carpet/trim transfer question, and a learner-built counterexample. All diagrams use calculated unit squares and boundary lengths. The learning loop works without runtime AI. The optional parent-reviewed explanation backend is documented in [AI setup](docs/AI_SETUP.md); it is not deployed by publishing GitHub Pages. There is no microphone capture or external reward link.
+Open “Same garden. Different fence?” on the home screen. The lesson follows prediction, tile exploration, explicit explanation, numeric application, a carpet/trim transfer question, and a learner-built counterexample. All diagrams use calculated unit squares and boundary lengths. The learning loop works without runtime AI. The optional parent-reviewed explanation backend is documented in [AI setup](docs/AI_SETUP.md); it is not deployed by publishing GitHub Pages. The separate voice-spelling feature uses the browser microphone only after parent opt-in and a learner tap. There is no external reward link.
 
 The Finish control is available throughout. Lesson steps, hints and attempts are saved locally as they change. Parent evidence distinguishes independent first attempts from supported/revised answers; finishing a lesson does not award mastery. Spoken explanations are not automatically assessed. Existing profiles remain intact.
 

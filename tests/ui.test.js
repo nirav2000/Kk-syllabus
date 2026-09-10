@@ -38,3 +38,12 @@ test('vocabulary, word filters and parent practice range work through UI',()=>{
 test('question replay escapes stored text rather than creating executable markup',async()=>{
   const {mountReports}=await import('../src/reports.js');const r=document.createElement('div');document.body.append(r);mountReports(r,{events:[{ts:'2026-01-01',data:{correct:false,itemId:'safe',stem:'<img src=x onerror=alert(1)>',response:'<script>bad</script>'}}]});assert.equal(r.querySelector('img'),null);assert.equal(r.querySelector('script'),null);assert(r.textContent.includes('<script>bad</script>'));r.remove();
 });
+test('profile switch shows actual type separately from new-profile defaults',()=>{
+  click('#profile-badge button');assert(!$('#profile-select'));$('.pin input').value='2468';submit('.pin');assert($('#profiles-panel').closest('details').open);assert($('.active-profile-card').textContent.includes('Test sandbox'));assert.equal($('#new-profile select[name="kind"]').value,'learner');
+  $('#profile-select').value='learner-clean-v1';$('#profile-select').dispatchEvent(new window.Event('change'));assert($('.active-profile-card').textContent.includes('Learner profile'));assert($('#profile-badge').textContent.includes('LEARNER'));assert(!$('#reset-test'));click('.close');
+});
+test('parent opt-in exposes confirmed voice spelling and records the input method',()=>{
+  let recognition;window.SpeechRecognition=class {constructor(){recognition=this;}start(){this.onstart?.();}stop(){this.onend?.();}abort(){this.onend?.();}};
+  click('#parent');$('.pin input').value='2468';submit('.pin');$('#word-panel input[name="voice"]').checked=true;submit('#word-panel form');click('.close');
+  click('[data-spelling]');click('[data-hear]');click('[data-listen]');recognition.onresult({resultIndex:0,results:[Object.assign([{transcript:'s a i d'}],{isFinal:true})]});assert.equal($('input[name="spelling"]').value,'');click('[data-use]');assert.equal($('input[name="spelling"]').value,'said');submit('#app form');assert.equal(stored().events.at(-1).data.inputMethod,'voice-confirmed');assert(stored().events.at(-1).data.correct);assert(!stored().events.at(-1).data.supported);click('[data-finish]');click('[data-home]');
+});
