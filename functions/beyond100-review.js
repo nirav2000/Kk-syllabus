@@ -33,9 +33,12 @@ function safeNoteId(value){
 async function capability(db,token){
   const ref=db.doc(`${REVIEW_COLLECTION}/${hash(token)}`),snap=await ref.get();
   if(!snap.exists)return null;
-  const data=snap.data()||{},expires=data.expiresAt?.toDate?.()||new Date(data.expiresAt||0);
-  if(data.revoked||!expires||expires.getTime()<=Date.now())return null;
-  return {ref,data,expires};
+  const data=snap.data()||{};
+  if(data.revoked)return null;
+  const permanent=data.permanent===true;
+  const expires=permanent?null:(data.expiresAt?.toDate?.()||new Date(data.expiresAt||0));
+  if(!permanent&&(!expires||expires.getTime()<=Date.now()))return null;
+  return {ref,data,expires,permanent};
 }
 function responseHeaders(res){
   res.set('Cache-Control','no-store, private');
@@ -52,11 +55,11 @@ function reviewUrl(token,params={}){
 
 export const createBeyond100ReviewLink=onCall({region:REGION,cors:['https://nirav2000.github.io']},async request=>{
   assertOwner(request);
-  const db=getFirestore(),days=cleanDays(request.data?.days),token=randomBytes(32).toString('base64url'),created=new Date(),expires=new Date(created.getTime()+days*86400000);
+  const db=getFirestore(),permanent=request.data?.permanent===true,days=cleanDays(request.data?.days),token=randomBytes(32).toString('base64url'),created=new Date(),expires=permanent?null:new Date(created.getTime()+days*86400000);
   await db.doc(`${REVIEW_COLLECTION}/${hash(token)}`).set({
-    app:APP_ID,ownerUid:OWNER_UID,learnerId:LEARNER_ID,createdAt:created,expiresAt:expires,revoked:false,lastAccessAt:null
+    app:APP_ID,ownerUid:OWNER_UID,learnerId:LEARNER_ID,createdAt:created,expiresAt:expires,permanent,revoked:false,lastAccessAt:null
   });
-  return {url:reviewUrl(token),expiresAt:expires.toISOString(),days};
+  return {url:reviewUrl(token),expiresAt:expires?.toISOString()||null,permanent,days:permanent?null:days};
 });
 
 export const revokeBeyond100ReviewLink=onCall({region:REGION,cors:['https://nirav2000.github.io']},async request=>{
@@ -168,7 +171,8 @@ export const beyond100Review=onRequest({region:REGION,cors:false,maxInstances:2,
   res.json({
     schema:'beyond100-review-v1',
     generatedAt:iso(),
-    expiresAt:cap.expires.toISOString(),
+    expiresAt:cap.expires?.toISOString()||null,
+    permanent:cap.permanent,
     app:APP_ID,
     repository:'nirav2000/beyond100',
     workflow:{
