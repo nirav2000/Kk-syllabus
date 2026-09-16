@@ -23,3 +23,5 @@ export const explain=onCall({region:'europe-west2',secrets:[key],maxInstances:1,
     return result;
   }catch{throw new HttpsError('unavailable','Explanation unavailable. Use the built-in teaching card.');}
 });
+
+export {createBeyond100ReviewLink,revokeBeyond100ReviewLink,beyond100Review} from './beyond100-review.js';
