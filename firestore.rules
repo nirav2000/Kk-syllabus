@@ -33,7 +33,8 @@ service cloud.firestore {
     // only for the memorable token; internally it is that account's password.
     // No Cloud Function or anonymously writable collection is required.
     match /app_private_state/openday {
-      allow read, create, update: if isOpenDaySync()
+      allow read: if isOpenDaySync();
+      allow create, update: if isOpenDaySync()
         && request.resource.data.app == 'openday';
       allow delete: if false;
     }
