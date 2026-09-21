@@ -1,0 +1,68 @@
+name: Deploy Firestore Rules
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "firestore.rules"
+      - "firebase.json"
+      - ".github/workflows/deploy-firestore-rules.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-firestore-rules
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Configure Firebase service account
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            echo "::error::Missing repository secret FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS"
+            exit 1
+          fi
+          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
+          chmod 600 "$CREDENTIALS_FILE"
+          node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log("Service-account JSON is valid.")' "$CREDENTIALS_FILE"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_FILE" >> "$GITHUB_ENV"
+
+      - name: Validate Firebase configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e 'const c=require("./firebase.json"); if (c.firestore?.rules !== "firestore.rules") throw new Error("firebase.json is not wired to firestore.rules");'
+          test -s firestore.rules
+
+      - name: Deploy Firestore rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes firebase-tools@latest deploy \
+            --only firestore:rules \
+            --project kk-syllabus \
+            --non-interactive
+
+      - name: Remove temporary credentials
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/firebase-service-account.json"
