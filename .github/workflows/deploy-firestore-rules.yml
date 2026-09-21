@@ -25,17 +25,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js 20
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
-          token_format: access_token
+          node-version: "24"
 
       - name: Validate Firebase configuration
         shell: bash
@@ -44,45 +37,78 @@ jobs:
           node -e 'const c=require("./firebase.json"); if (c.firestore?.rules !== "firestore.rules") throw new Error("firebase.json is not wired to firestore.rules");'
           test -s firestore.rules
 
-      - name: Create Firestore ruleset
-        id: ruleset
+      - name: Authenticate and deploy Firestore rules
         shell: bash
         env:
-          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
         run: |
           set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            echo "::error::Missing repository secret FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS"
+            exit 1
+          fi
+
+          CREDS="$RUNNER_TEMP/firebase-service-account.json"
+          JWT_FILE="$RUNNER_TEMP/firebase-jwt.txt"
+          TOKEN_RESPONSE="$RUNNER_TEMP/oauth-token.json"
+          RULESET_REQUEST="$RUNNER_TEMP/ruleset-request.json"
+          RULESET_RESPONSE="$RUNNER_TEMP/ruleset-response.json"
+          RELEASE_REQUEST="$RUNNER_TEMP/release-request.json"
+          RELEASE_RESPONSE="$RUNNER_TEMP/release-response.json"
+
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDS"
+          chmod 600 "$CREDS"
+
           node <<'NODE'
           const fs=require('fs');
-          const rules=fs.readFileSync('firestore.rules','utf8');
+          const crypto=require('crypto');
+          const creds=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/firebase-service-account.json','utf8'));
+          const b64=v=>Buffer.from(JSON.stringify(v)).toString('base64url');
+          const now=Math.floor(Date.now()/1000);
+          const header={alg:'RS256',typ:'JWT'};
+          const claims={
+            iss:creds.client_email,
+            scope:'https://www.googleapis.com/auth/cloud-platform',
+            aud:creds.token_uri||'https://oauth2.googleapis.com/token',
+            iat:now,
+            exp:now+3600
+          };
+          const unsigned=b64(header)+'.'+b64(claims);
+          const sig=crypto.sign('RSA-SHA256',Buffer.from(unsigned),creds.private_key).toString('base64url');
+          fs.writeFileSync(process.env.RUNNER_TEMP+'/firebase-jwt.txt',unsigned+'.'+sig);
           fs.writeFileSync(
-            process.env.RUNNER_TEMP + '/ruleset-request.json',
-            JSON.stringify({source:{files:[{name:'firestore.rules',content:rules}]}})
+            process.env.RUNNER_TEMP+'/ruleset-request.json',
+            JSON.stringify({source:{files:[{name:'firestore.rules',content:fs.readFileSync('firestore.rules','utf8')}]}})
           );
           NODE
+
+          ASSERTION="$(cat "$JWT_FILE")"
+          TOKEN_URI="$(node -e 'const c=require(process.argv[1]); process.stdout.write(c.token_uri||"https://oauth2.googleapis.com/token")' "$CREDS")"
+
+          curl --fail-with-body --silent --show-error \
+            -X POST "$TOKEN_URI" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+            --data-urlencode "assertion=$ASSERTION" \
+            > "$TOKEN_RESPONSE"
+
+          ACCESS_TOKEN="$(node -e 'const r=require(process.argv[1]); if(!r.access_token) throw new Error("OAuth token response contained no access_token"); process.stdout.write(r.access_token)' "$TOKEN_RESPONSE")"
 
           curl --fail-with-body --silent --show-error \
             -X POST \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Content-Type: application/json" \
-            --data-binary @"$RUNNER_TEMP/ruleset-request.json" \
+            --data-binary @"$RULESET_REQUEST" \
             "https://firebaserules.googleapis.com/v1/projects/kk-syllabus/rulesets" \
-            > "$RUNNER_TEMP/ruleset-response.json"
+            > "$RULESET_RESPONSE"
 
-          RULESET_NAME="$(node -e 'const r=require(process.argv[1]); if(!r.name) throw new Error("Rules API returned no ruleset name"); process.stdout.write(r.name)' "$RUNNER_TEMP/ruleset-response.json")"
-          echo "ruleset_name=$RULESET_NAME" >> "$GITHUB_OUTPUT"
+          RULESET_NAME="$(node -e 'const r=require(process.argv[1]); if(!r.name) throw new Error("Rules API returned no ruleset name"); process.stdout.write(r.name)' "$RULESET_RESPONSE")"
           echo "Created ruleset: $RULESET_NAME"
 
-      - name: Release ruleset to Cloud Firestore
-        shell: bash
-        env:
-          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-          RULESET_NAME: ${{ steps.ruleset.outputs.ruleset_name }}
-        run: |
-          set -euo pipefail
-          node <<'NODE'
+          RULESET_NAME="$RULESET_NAME" node <<'NODE'
           const fs=require('fs');
           fs.writeFileSync(
-            process.env.RUNNER_TEMP + '/release-request.json',
+            process.env.RUNNER_TEMP+'/release-request.json',
             JSON.stringify({
               name:'projects/kk-syllabus/releases/cloud.firestore',
               rulesetName:process.env.RULESET_NAME
@@ -94,13 +120,13 @@ jobs:
             -X PATCH \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Content-Type: application/json" \
-            --data-binary @"$RUNNER_TEMP/release-request.json" \
+            --data-binary @"$RELEASE_REQUEST" \
             "https://firebaserules.googleapis.com/v1/projects/kk-syllabus/releases/cloud.firestore?updateMask=rulesetName" \
-            > "$RUNNER_TEMP/release-response.json"
+            > "$RELEASE_RESPONSE"
 
-          node -e 'const r=require(process.argv[1]); if(r.rulesetName!==process.env.RULESET_NAME) throw new Error("Release did not point at the new ruleset"); console.log("Released:",r.name,"->",r.rulesetName)' "$RUNNER_TEMP/release-response.json"
+          RULESET_NAME="$RULESET_NAME" node -e 'const r=require(process.argv[1]); if(r.rulesetName!==process.env.RULESET_NAME) throw new Error("Release did not point at the new ruleset"); console.log("Released:",r.name,"->",r.rulesetName)' "$RELEASE_RESPONSE"
 
-      - name: Remove temporary request files
+      - name: Remove temporary credentials and responses
         if: always()
         shell: bash
-        run: rm -f "$RUNNER_TEMP/ruleset-request.json" "$RUNNER_TEMP/ruleset-response.json" "$RUNNER_TEMP/release-request.json" "$RUNNER_TEMP/release-response.json"
+        run: rm -f "$RUNNER_TEMP/firebase-service-account.json" "$RUNNER_TEMP/firebase-jwt.txt" "$RUNNER_TEMP/oauth-token.json" "$RUNNER_TEMP/ruleset-request.json" "$RUNNER_TEMP/ruleset-response.json" "$RUNNER_TEMP/release-request.json" "$RUNNER_TEMP/release-response.json"
