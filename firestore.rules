@@ -39,28 +39,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-
-
     // Beyond 100 persistent parent-controller capability.
     // A 256-bit random document ID is the bearer key. Exact-document reads are
     // permitted when the capability is active; collection listing is forbidden.
-    // The bearer may update only the command/presence fields. Creation, identity
+    // The bearer may update only command/presence fields. Creation, identity
     // changes and revocation remain restricted to the owner account.
     match /beyond100_parent_controllers/{controllerId} {
       function validControllerId() {
-        return controllerId.matches('^[A-Za-z0-9_-]{43}
-    // The long random document ID acts as a bearer capability. Collection
-    // listing is forbidden; only a caller who already knows the exact ID can get it.
-    match /beyond100_review_feeds/{feedId} {
-      allow get: if feedId.matches('^[A-Za-z0-9_-]{40,120}$')
-        && resource.data.app == 'beyond100';
-      allow list: if false;
-      allow create, update, delete: if request.auth != null
-        && request.auth.uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
-    }
-  }
-}
-);
+        return controllerId.matches('^[A-Za-z0-9_-]{43}$');
       }
 
       function validBearerCommand() {
