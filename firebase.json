@@ -1,1 +1,12 @@
-{"functions":{"source":"functions","predeploy":["node content/build.mjs","node content/build-ai-catalog.mjs"]}}
+{
+  "functions": {
+    "source": "functions",
+    "predeploy": [
+      "node content/build.mjs",
+      "node content/build-ai-catalog.mjs"
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
