@@ -30,21 +30,12 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Configure Firebase service account
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
-        run: |
-          set -euo pipefail
-          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
-            echo "::error::Missing repository secret FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS"
-            exit 1
-          fi
-          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-service-account.json"
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
-          chmod 600 "$CREDENTIALS_FILE"
-          node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log("Service-account JSON is valid.")' "$CREDENTIALS_FILE"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_FILE" >> "$GITHUB_ENV"
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+          token_format: access_token
 
       - name: Validate Firebase configuration
         shell: bash
@@ -53,16 +44,63 @@ jobs:
           node -e 'const c=require("./firebase.json"); if (c.firestore?.rules !== "firestore.rules") throw new Error("firebase.json is not wired to firestore.rules");'
           test -s firestore.rules
 
-      - name: Deploy Firestore rules
+      - name: Create Firestore ruleset
+        id: ruleset
         shell: bash
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
           set -euo pipefail
-          npx --yes firebase-tools@latest deploy \
-            --only firestore:rules \
-            --project kk-syllabus \
-            --non-interactive
+          node <<'NODE'
+          const fs=require('fs');
+          const rules=fs.readFileSync('firestore.rules','utf8');
+          fs.writeFileSync(
+            process.env.RUNNER_TEMP + '/ruleset-request.json',
+            JSON.stringify({source:{files:[{name:'firestore.rules',content:rules}]}})
+          );
+          NODE
 
-      - name: Remove temporary credentials
+          curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data-binary @"$RUNNER_TEMP/ruleset-request.json" \
+            "https://firebaserules.googleapis.com/v1/projects/kk-syllabus/rulesets" \
+            > "$RUNNER_TEMP/ruleset-response.json"
+
+          RULESET_NAME="$(node -e 'const r=require(process.argv[1]); if(!r.name) throw new Error("Rules API returned no ruleset name"); process.stdout.write(r.name)' "$RUNNER_TEMP/ruleset-response.json")"
+          echo "ruleset_name=$RULESET_NAME" >> "$GITHUB_OUTPUT"
+          echo "Created ruleset: $RULESET_NAME"
+
+      - name: Release ruleset to Cloud Firestore
+        shell: bash
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          RULESET_NAME: ${{ steps.ruleset.outputs.ruleset_name }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          fs.writeFileSync(
+            process.env.RUNNER_TEMP + '/release-request.json',
+            JSON.stringify({
+              name:'projects/kk-syllabus/releases/cloud.firestore',
+              rulesetName:process.env.RULESET_NAME
+            })
+          );
+          NODE
+
+          curl --fail-with-body --silent --show-error \
+            -X PATCH \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data-binary @"$RUNNER_TEMP/release-request.json" \
+            "https://firebaserules.googleapis.com/v1/projects/kk-syllabus/releases/cloud.firestore?updateMask=rulesetName" \
+            > "$RUNNER_TEMP/release-response.json"
+
+          node -e 'const r=require(process.argv[1]); if(r.rulesetName!==process.env.RULESET_NAME) throw new Error("Release did not point at the new ruleset"); console.log("Released:",r.name,"->",r.rulesetName)' "$RUNNER_TEMP/release-response.json"
+
+      - name: Remove temporary request files
         if: always()
         shell: bash
-        run: rm -f "$RUNNER_TEMP/firebase-service-account.json"
+        run: rm -f "$RUNNER_TEMP/ruleset-request.json" "$RUNNER_TEMP/ruleset-response.json" "$RUNNER_TEMP/release-request.json" "$RUNNER_TEMP/release-response.json"
