@@ -117,11 +117,11 @@ jobs:
           NODE
 
           curl --fail-with-body --silent --show-error \
-            -X PATCH \
+            -X POST \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Content-Type: application/json" \
             --data-binary @"$RELEASE_REQUEST" \
-            "https://firebaserules.googleapis.com/v1/projects/kk-syllabus/releases/cloud.firestore?updateMask=rulesetName" \
+            "https://firebaserules.googleapis.com/v1/projects/kk-syllabus/releases" \
             > "$RELEASE_RESPONSE"
 
           RULESET_NAME="$RULESET_NAME" node -e 'const r=require(process.argv[1]); if(r.rulesetName!==process.env.RULESET_NAME) throw new Error("Release did not point at the new ruleset"); console.log("Released:",r.name,"->",r.rulesetName)' "$RELEASE_RESPONSE"
