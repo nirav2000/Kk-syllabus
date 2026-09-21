@@ -102,89 +102,10 @@ service cloud.firestore {
 
       match /invites/{inviteId} {
         allow get: if snagSignedIn()
-          && inviteId.matches('^[A-Za-z0-9_-]{32,120}
-    // A 256-bit random document ID is the bearer key. Exact-document reads are
-    // permitted when the capability is active; collection listing is forbidden.
-    // The bearer may update only command/presence fields. Creation, identity
-    // changes and revocation remain restricted to the owner account.
-    match /beyond100_parent_controllers/{controllerId} {
-      function validControllerId() {
-        return controllerId.matches('^[A-Za-z0-9_-]{43}$');
-      }
-
-      function validBearerCommand() {
-        return request.resource.data.command == resource.data.command
-          || (
-            request.resource.data.command is map
-            && request.resource.data.command.id is string
-            && request.resource.data.command.action in [
-              'set-phase',
-              'set-outcome',
-              'set-error',
-              'set-prompt',
-              'record',
-              'next',
-              'timer',
-              'confidence',
-              'parent-note'
-            ]
-          );
-      }
-
-      function validBearerUpdate() {
-        return validControllerId()
-          && resource.data.app == 'beyond100'
-          && resource.data.active == true
-          && request.resource.data.app == resource.data.app
-          && request.resource.data.kind == resource.data.kind
-          && request.resource.data.active == true
-          && request.resource.data.ownerUid == resource.data.ownerUid
-          && request.resource.data.learnerId == resource.data.learnerId
-          && request.resource.data.controllerVersion == resource.data.controllerVersion
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'command',
-            'controllerPresence',
-            'controllerUpdatedAt'
-          ])
-          && validBearerCommand();
-      }
-
-      allow get: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        || (
-          validControllerId()
-          && resource.data.app == 'beyond100'
-          && resource.data.active == true
-        );
-      allow list: if false;
-
-      allow create: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        && validControllerId()
-        && request.resource.data.app == 'beyond100'
-        && request.resource.data.kind == 'parent-controller-capability'
-        && request.resource.data.active == true
-        && request.resource.data.ownerUid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
-
-      allow update: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        || validBearerUpdate();
-
-      allow delete: if false;
-    }
-
-    // Beyond 100 publishes only a sanitized review snapshot here.
-    // The long random document ID acts as a bearer capability. Collection
-    // listing is forbidden; only a caller who already knows the exact ID can get it.
-    match /beyond100_review_feeds/{feedId} {
-      allow get: if feedId.matches('^[A-Za-z0-9_-]{40,120}$')
-        && resource.data.app == 'beyond100';
-      allow list: if false;
-      allow create, update, delete: if request.auth != null
-        && request.auth.uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
-    }
-  }
-}
-)
+          && inviteId.matches('^[A-Za-z0-9_-]{32,120}$')
           && resource.data.active == true;
-        allow list: if snagProject(projectId).data.ownerUid == request.auth.uid;
+        allow list: if snagSignedIn()
+          && snagProject(projectId).data.ownerUid == request.auth.uid;
         allow create, update: if snagSignedIn()
           && snagProject(projectId).data.ownerUid == request.auth.uid;
         allow delete: if false;
@@ -207,87 +128,7 @@ service cloud.firestore {
 
     // Sanitized developer-note feed for Snag Recorder.
     match /snag_review_feeds/{feedId} {
-      allow get: if feedId.matches('^[A-Za-z0-9_-]{40,120}
-    // A 256-bit random document ID is the bearer key. Exact-document reads are
-    // permitted when the capability is active; collection listing is forbidden.
-    // The bearer may update only command/presence fields. Creation, identity
-    // changes and revocation remain restricted to the owner account.
-    match /beyond100_parent_controllers/{controllerId} {
-      function validControllerId() {
-        return controllerId.matches('^[A-Za-z0-9_-]{43}$');
-      }
-
-      function validBearerCommand() {
-        return request.resource.data.command == resource.data.command
-          || (
-            request.resource.data.command is map
-            && request.resource.data.command.id is string
-            && request.resource.data.command.action in [
-              'set-phase',
-              'set-outcome',
-              'set-error',
-              'set-prompt',
-              'record',
-              'next',
-              'timer',
-              'confidence',
-              'parent-note'
-            ]
-          );
-      }
-
-      function validBearerUpdate() {
-        return validControllerId()
-          && resource.data.app == 'beyond100'
-          && resource.data.active == true
-          && request.resource.data.app == resource.data.app
-          && request.resource.data.kind == resource.data.kind
-          && request.resource.data.active == true
-          && request.resource.data.ownerUid == resource.data.ownerUid
-          && request.resource.data.learnerId == resource.data.learnerId
-          && request.resource.data.controllerVersion == resource.data.controllerVersion
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'command',
-            'controllerPresence',
-            'controllerUpdatedAt'
-          ])
-          && validBearerCommand();
-      }
-
-      allow get: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        || (
-          validControllerId()
-          && resource.data.app == 'beyond100'
-          && resource.data.active == true
-        );
-      allow list: if false;
-
-      allow create: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        && validControllerId()
-        && request.resource.data.app == 'beyond100'
-        && request.resource.data.kind == 'parent-controller-capability'
-        && request.resource.data.active == true
-        && request.resource.data.ownerUid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
-
-      allow update: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        || validBearerUpdate();
-
-      allow delete: if false;
-    }
-
-    // Beyond 100 publishes only a sanitized review snapshot here.
-    // The long random document ID acts as a bearer capability. Collection
-    // listing is forbidden; only a caller who already knows the exact ID can get it.
-    match /beyond100_review_feeds/{feedId} {
       allow get: if feedId.matches('^[A-Za-z0-9_-]{40,120}$')
-        && resource.data.app == 'beyond100';
-      allow list: if false;
-      allow create, update, delete: if request.auth != null
-        && request.auth.uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
-    }
-  }
-}
-)
         && resource.data.app == 'snag';
       allow list: if false;
       allow create, update, delete: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2');
