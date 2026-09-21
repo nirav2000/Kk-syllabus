@@ -127,6 +127,14 @@ service cloud.firestore {
         }
       }
 
+      // Per-member seen state powers genuine unread dots without a visible login.
+      match /members/{memberId}/seen/{snagId} {
+        allow read, create, update: if snagSignedIn()
+          && request.auth.uid == memberId
+          && snagMember(projectId);
+        allow delete: if false;
+      }
+
       // Contractor working notes are private to their author and project
       // owner/admin. Collection queries are permitted, but Firestore only
       // returns documents allowed by these rules when appropriately queried.
