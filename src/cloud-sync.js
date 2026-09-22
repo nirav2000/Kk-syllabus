@@ -56,10 +56,11 @@ export async function syncNow() {
     const catalog=await api.getDocsFromServer(catalogRef);
     if(token!==generation)return;
     profiles.mergeCatalog(catalog.docs.map(d=>({...d.data(),id:d.id})).filter(descriptorValid));
+    const catalogById=new Map(catalog.docs.map(d=>[d.id,d.data()]));
     for(const descriptor of profiles.list()) {
       if(token!==generation)return;
-      const ref=api.doc(catalogRef,descriptor.id);
-      await api.runTransaction(db,async tx=>{const old=await tx.get(ref);tx.set(ref,mergeDescriptor(old.exists()&&descriptorValid(old.data())?old.data():null,descriptor));});
+      const ref=api.doc(catalogRef,descriptor.id),old=catalogById.get(descriptor.id),next=mergeDescriptor(old&&descriptorValid(old)?old:null,descriptor);
+      if(JSON.stringify(old||null)!==JSON.stringify(next))await api.setDoc(ref,next,{merge:true});
     }
     if(token!==generation)return;
     const ids=[profileId,...profiles.list().filter(p=>p.id!==profileId&&profiles.hasLocal(p.id)).map(p=>p.id)];
@@ -71,7 +72,7 @@ export async function syncNow() {
     const ok = await syncLearning(profileStore, {
       async readEvents(){ const rows=await api.getDocsFromServer(eventsRef); return rows.docs.map(d=>d.data()); },
       async writeEvents(events){const batch=api.writeBatch(db);for(const event of events)batch.set(api.doc(eventsRef,event.id),event);await batch.commit();},
-      async updateMetadata(merge){return api.runTransaction(db,async tx=>{const old=await tx.get(progressRef);const next=merge(old.exists()?old.data():null);tx.set(progressRef,next);return next;});}
+      async updateMetadata(merge){return api.runTransaction(db,async tx=>{const old=await tx.get(progressRef),prior=old.exists()?old.data():null,next=merge(prior);if(JSON.stringify(prior||null)!==JSON.stringify(next))tx.set(progressRef,next);return next;});}
     },()=>token===generation);
     if(!ok)return;
     }
@@ -107,5 +108,5 @@ if(typeof window!=='undefined'){
     if(e.detail.source==='local'&&state.signedIn)schedule();
   });
   window.addEventListener('online',()=>{if(state.signedIn)schedule();else void startCloud();});
-  window.addEventListener('focus',()=>{if(state.signedIn)schedule();});
+  // Focus/reload alone must not cause a cloud write. Local changes and reconnects schedule sync.
 }
