@@ -53,14 +53,14 @@ export async function syncNow() {
   running=true;publish({busy:true,message:'Saving to Firestore…'});
   try {
     const catalogRef=api.collection(db,'families',OWNER_UID,'learners');
-    const catalog=await api.getDocsFromServer(catalogRef);
+    window.FirebaseUsageMonitor?.read(1,'profile-catalog-query','kk-syllabus');const catalog=await api.getDocsFromServer(catalogRef);
     if(token!==generation)return;
     profiles.mergeCatalog(catalog.docs.map(d=>({...d.data(),id:d.id})).filter(descriptorValid));
     const catalogById=new Map(catalog.docs.map(d=>[d.id,d.data()]));
     for(const descriptor of profiles.list()) {
       if(token!==generation)return;
       const ref=api.doc(catalogRef,descriptor.id),old=catalogById.get(descriptor.id),next=mergeDescriptor(old&&descriptorValid(old)?old:null,descriptor);
-      if(JSON.stringify(old||null)!==JSON.stringify(next))await api.setDoc(ref,next,{merge:true});
+      if(JSON.stringify(old||null)!==JSON.stringify(next))window.FirebaseUsageMonitor?.write(1,'profile-descriptor','kk-syllabus');await api.setDoc(ref,next,{merge:true});
     }
     if(token!==generation)return;
     const ids=[profileId,...profiles.list().filter(p=>p.id!==profileId&&profiles.hasLocal(p.id)).map(p=>p.id)];
@@ -70,9 +70,9 @@ export async function syncNow() {
     const base=['families',OWNER_UID,'learners',id];
     const eventsRef=api.collection(db,...base,'events'), progressRef=api.doc(db,...base,'progress','state');
     const ok = await syncLearning(profileStore, {
-      async readEvents(){ const rows=await api.getDocsFromServer(eventsRef); return rows.docs.map(d=>d.data()); },
-      async writeEvents(events){const batch=api.writeBatch(db);for(const event of events)batch.set(api.doc(eventsRef,event.id),event);await batch.commit();},
-      async updateMetadata(merge){return api.runTransaction(db,async tx=>{const old=await tx.get(progressRef),prior=old.exists()?old.data():null,next=merge(prior);if(JSON.stringify(prior||null)!==JSON.stringify(next))tx.set(progressRef,next);return next;});}
+      async readEvents(){ window.FirebaseUsageMonitor?.read(1,'events-query','kk-syllabus');const rows=await api.getDocsFromServer(eventsRef); return rows.docs.map(d=>d.data()); },
+      async writeEvents(events){if(events?.length)window.FirebaseUsageMonitor?.write(events.length,'events-batch','kk-syllabus');const batch=api.writeBatch(db);for(const event of events)batch.set(api.doc(eventsRef,event.id),event);await batch.commit();},
+      async updateMetadata(merge){return api.runTransaction(db,async tx=>{const old=await tx.get(progressRef),prior=old.exists()?old.data():null,next=merge(prior);if(JSON.stringify(prior||null)!==JSON.stringify(next)){window.FirebaseUsageMonitor?.write(1,'progress-metadata','kk-syllabus');tx.set(progressRef,next);}return next;});}
     },()=>token===generation);
     if(!ok)return;
     }
