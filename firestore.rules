@@ -190,7 +190,8 @@ service cloud.firestore {
               'next',
               'timer',
               'confidence',
-              'parent-note'
+              'parent-note',
+              'request-state'
             ]
           );
       }
