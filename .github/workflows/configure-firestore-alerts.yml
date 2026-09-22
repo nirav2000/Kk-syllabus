@@ -1,0 +1,142 @@
+name: Configure Firestore usage alerts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/configure-firestore-alerts.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            echo "::error::Missing FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS"
+            exit 1
+          fi
+          CREDS="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDS"
+          chmod 600 "$CREDS"
+          node <<'NODE'
+          const fs=require('fs'),crypto=require('crypto');
+          const c=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/firebase-service-account.json','utf8'));
+          const enc=v=>Buffer.from(JSON.stringify(v)).toString('base64url'),now=Math.floor(Date.now()/1000);
+          const header={alg:'RS256',typ:'JWT'};
+          const claims={iss:c.client_email,scope:'https://www.googleapis.com/auth/cloud-platform',aud:c.token_uri||'https://oauth2.googleapis.com/token',iat:now,exp:now+3600};
+          const unsigned=enc(header)+'.'+enc(claims);
+          const sig=crypto.sign('RSA-SHA256',Buffer.from(unsigned),c.private_key).toString('base64url');
+          fs.writeFileSync(process.env.RUNNER_TEMP+'/jwt.txt',unsigned+'.'+sig);
+          NODE
+          ASSERTION="$(cat "$RUNNER_TEMP/jwt.txt")"
+          TOKEN_URI="$(node -e 'const c=require(process.argv[1]);process.stdout.write(c.token_uri||"https://oauth2.googleapis.com/token")' "$CREDS")"
+          curl --fail-with-body -sS -X POST "$TOKEN_URI"             -H "Content-Type: application/x-www-form-urlencoded"             --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer"             --data-urlencode "assertion=$ASSERTION" > "$RUNNER_TEMP/token.json"
+          TOKEN="$(node -e 'const r=require(process.argv[1]);if(!r.access_token)throw Error("No access token");process.stdout.write(r.access_token)' "$RUNNER_TEMP/token.json")"
+          echo "GCLOUD_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Discover notification channels
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS             -H "Authorization: Bearer $GCLOUD_TOKEN"             "https://monitoring.googleapis.com/v3/projects/kk-syllabus/notificationChannels?pageSize=100"             > "$RUNNER_TEMP/channels.json"
+          node <<'NODE'
+          const fs=require('fs');
+          const j=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/channels.json','utf8'));
+          const enabled=(j.notificationChannels||[]).filter(x=>x.enabled!==false&&x.verificationStatus!=='UNVERIFIED').map(x=>x.name);
+          fs.writeFileSync(process.env.RUNNER_TEMP+'/channel-names.json',JSON.stringify(enabled));
+          console.log('Verified/enabled notification channels:',enabled.length);
+          for(const x of (j.notificationChannels||[])) console.log('-',x.displayName||x.name,x.type,x.verificationStatus||'',x.enabled===false?'disabled':'enabled');
+          NODE
+
+      - name: Create or update Firestore usage alerts
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS             -H "Authorization: Bearer $GCLOUD_TOKEN"             "https://monitoring.googleapis.com/v3/projects/kk-syllabus/alertPolicies?pageSize=100"             > "$RUNNER_TEMP/policies.json"
+
+          node <<'NODE'
+          const fs=require('fs'), cp=require('child_process');
+          const project='kk-syllabus';
+          const token=process.env.GCLOUD_TOKEN;
+          const existing=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/policies.json','utf8')).alertPolicies||[];
+          const channels=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/channel-names.json','utf8'));
+          const specs=[
+            ['Firestore writes > 1,000 / rolling 24h','firestore.googleapis.com/document/write_count',1000],
+            ['Firestore writes > 5,000 / rolling 24h','firestore.googleapis.com/document/write_count',5000],
+            ['Firestore writes > 10,000 / rolling 24h','firestore.googleapis.com/document/write_count',10000],
+            ['Firestore reads > 1,000 / rolling 24h','firestore.googleapis.com/document/read_count',1000],
+            ['Firestore reads > 5,000 / rolling 24h','firestore.googleapis.com/document/read_count',5000],
+            ['Firestore reads > 20,000 / rolling 24h','firestore.googleapis.com/document/read_count',20000],
+            ['Firestore reads > 40,000 / rolling 24h','firestore.googleapis.com/document/read_count',40000]
+          ];
+          function request(method,url,body){
+            const f=process.env.RUNNER_TEMP+'/policy-body.json';
+            fs.writeFileSync(f,JSON.stringify(body));
+            return cp.execFileSync('curl',['--fail-with-body','-sS','-X',method,'-H','Authorization: Bearer '+token,'-H','Content-Type: application/json','--data-binary','@'+f,url],{encoding:'utf8'});
+          }
+          for(const [displayName,metric,threshold] of specs){
+            const body={
+              displayName,
+              documentation:{content:'Early warning for kk-syllabus Firestore usage. Investigate app-level Firebase Usage Monitor when this fires.',mimeType:'text/markdown'},
+              combiner:'OR',
+              enabled:true,
+              notificationChannels:channels,
+              conditions:[{
+                displayName,
+                conditionThreshold:{
+                  filter:'metric.type="'+metric+'"',
+                  comparison:'COMPARISON_GT',
+                  thresholdValue:threshold,
+                  duration:'0s',
+                  aggregations:[{
+                    alignmentPeriod:'86400s',
+                    perSeriesAligner:'ALIGN_SUM',
+                    crossSeriesReducer:'REDUCE_SUM'
+                  }],
+                  trigger:{count:1}
+                }
+              }],
+              alertStrategy:{autoClose:'86400s'}
+            };
+            const prior=existing.find(x=>x.displayName===displayName);
+            if(prior){
+              body.name=prior.name;
+              const url='https://monitoring.googleapis.com/v3/'+prior.name+'?updateMask=displayName,documentation,combiner,enabled,notificationChannels,conditions,alertStrategy';
+              request('PATCH',url,body);
+              console.log('Updated',displayName);
+            }else{
+              request('POST','https://monitoring.googleapis.com/v3/projects/'+project+'/alertPolicies',body);
+              console.log('Created',displayName);
+            }
+          }
+          if(!channels.length)console.log('::warning::No verified notification channel found. Policies exist, but add/verify an email channel in Cloud Monitoring to receive messages.');
+          NODE
+
+      - name: Verify alert policies
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS             -H "Authorization: Bearer $GCLOUD_TOKEN"             "https://monitoring.googleapis.com/v3/projects/kk-syllabus/alertPolicies?pageSize=100"             > "$RUNNER_TEMP/verify.json"
+          node <<'NODE'
+          const j=require(process.env.RUNNER_TEMP+'/verify.json');
+          const rows=(j.alertPolicies||[]).filter(x=>/^Firestore (reads|writes) >/.test(x.displayName));
+          console.log('Firestore usage policies:',rows.length);
+          for(const x of rows)console.log('-',x.displayName,'channels:',(x.notificationChannels||[]).length,'enabled:',x.enabled!==false);
+          if(rows.length<7)process.exitCode=1;
+          NODE
+
+      - name: Clean temporary credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-service-account.json" "$RUNNER_TEMP/jwt.txt" "$RUNNER_TEMP/token.json" "$RUNNER_TEMP/channels.json" "$RUNNER_TEMP/channel-names.json" "$RUNNER_TEMP/policies.json" "$RUNNER_TEMP/policy-body.json" "$RUNNER_TEMP/verify.json"
