@@ -7,11 +7,6 @@ service cloud.firestore {
         && uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
     }
 
-    function isOpenDaySync() {
-      return request.auth != null
-        && request.auth.token.email == 'openday-sync@nirav2000.github.io';
-    }
-
     match /families/{uid}/learners/{learnerId} {
       allow read, create, update: if isOwner(uid);
       allow delete: if false;
@@ -29,12 +24,12 @@ service cloud.firestore {
       }
     }
 
-    // Openday uses one dedicated Firebase Authentication account. The UI asks
-    // only for the memorable token; internally it is that account's password.
-    // No Cloud Function or anonymously writable collection is required.
+    // Openday reuses the same parent Firebase Authentication account as
+    // Kk-syllabus. Public catalogue publishing is performed by an authorised
+    // backend/service account; private browser state remains owner-only.
     match /app_private_state/openday {
-      allow read: if isOpenDaySync();
-      allow create, update: if isOpenDaySync()
+      allow read: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2');
+      allow create, update: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
         && request.resource.data.app == 'openday';
       allow delete: if false;
     }
