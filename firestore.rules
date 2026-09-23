@@ -39,7 +39,7 @@ service cloud.firestore {
     // Reports are append-only and publicly readable so every visitor sees the
     // same reported corrections. Personal visit notes stay in private state.
     match /openday_public_reports/{reportId} {
-      allow read: if resource.data.app == 'openday';
+      allow read: if true;
 
       allow create: if request.resource.data.keys().hasOnly([
           'app',
