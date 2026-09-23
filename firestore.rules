@@ -112,9 +112,9 @@ service cloud.firestore {
             || (snagMember(projectId)
               && get(/databases/$(database)/documents/snag_projects/$(projectId)/members/$(request.auth.uid)).data.admin == true);
         }
-        allow get: if snagSignedIn()
+        // Read-only archive, with private notes still constrained by author.
+        allow read: if snagSignedIn()
           && (noteAdmin() || resource.data.authorUid == request.auth.uid);
-        allow list: if snagSignedIn() && (noteAdmin() || snagMember(projectId));
         allow create, update, delete: if false;
       }
     }
