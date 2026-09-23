@@ -20,7 +20,6 @@ jobs:
         run: |
           node --check functions/index.js
           node --check functions/beyond100-review.js
-          node --check functions/openday-sync.js
       - name: Prepare public web files
         run: |
           mkdir -p public
