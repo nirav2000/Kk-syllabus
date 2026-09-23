@@ -36,215 +36,35 @@ service cloud.firestore {
 
 
     // Openday memorable-token capability.
-    // The client derives a SHA-256 document ID from the memorable token.
-    // Collection listing is forbidden; possession of the token is required to
-    // know the exact capability document path. Only the owner account can
-    // create/rotate a capability. A bearer can update only private state fields.
+    // The client derives an unguessable document ID from the memorable token.
+    // Collection listing is forbidden. Only the owner can create/rotate a
+    // capability; anyone who knows the exact active capability path can use
+    // that token to sync Openday private state.
     match /openday_sync/{tokenHash} {
-      function validOpenDayTokenHash() {
-        return tokenHash.matches('^[a-f0-9]{64}
-    // Since the Snag app moved to its own Firebase project, kk-syllabus is a
-    // read-only migration/rollback source. Existing authenticated users may
-    // read only the Snag data they could access before migration; no Snag
-    // client may create, update or delete legacy data.
-    function snagSignedIn() {
-      return request.auth != null;
-    }
-
-    function snagProject(projectId) {
-      return get(/databases/$(database)/documents/snag_projects/$(projectId));
-    }
-
-    function snagMember(projectId) {
-      return snagSignedIn()
-        && exists(/databases/$(database)/documents/snag_projects/$(projectId)/members/$(request.auth.uid));
-    }
-
-    function snagMemberRole(projectId) {
-      return get(/databases/$(database)/documents/snag_projects/$(projectId)/members/$(request.auth.uid)).data.role;
-    }
-
-    match /snag_projects/{projectId} {
-      allow read: if snagSignedIn()
-        && (resource.data.ownerUid == request.auth.uid || snagMember(projectId));
-      allow create, update, delete: if false;
-
-      match /members/{memberId} {
-        allow read: if snagSignedIn()
-          && (
-            request.auth.uid == memberId
-            || snagProject(projectId).data.ownerUid == request.auth.uid
-            || snagMember(projectId)
-          );
-        allow create, update, delete: if false;
-      }
-
-      match /invites/{inviteId} {
-        allow get: if snagSignedIn()
-          && inviteId.matches('^[A-Za-z0-9_-]{32,120}$')
-          && resource.data.active == true;
-        allow list: if snagSignedIn()
-          && snagProject(projectId).data.ownerUid == request.auth.uid;
-        allow create, update, delete: if false;
-      }
-
-      match /snags/{snagId} {
-        allow read: if snagSignedIn()
-          && (snagProject(projectId).data.ownerUid == request.auth.uid || snagMember(projectId));
-        allow create, update, delete: if false;
-
-        match /updates/{updateId} {
-          allow read: if snagSignedIn()
-            && (snagProject(projectId).data.ownerUid == request.auth.uid || snagMember(projectId));
-          allow create, update, delete: if false;
-        }
-      }
-
-      match /members/{memberId}/seen/{snagId} {
-        allow read: if snagSignedIn()
-          && request.auth.uid == memberId
-          && snagMember(projectId);
-        allow create, update, delete: if false;
-      }
-
-      match /private_notes/{noteId} {
-        function noteAdmin() {
-          return snagProject(projectId).data.ownerUid == request.auth.uid
-            || (snagMember(projectId) && snagMemberRole(projectId) == 'owner')
-            || (snagMember(projectId)
-              && get(/databases/$(database)/documents/snag_projects/$(projectId)/members/$(request.auth.uid)).data.admin == true);
-        }
-        // Read-only archive, with private notes still constrained by author.
-        allow read: if snagSignedIn()
-          && (noteAdmin() || resource.data.authorUid == request.auth.uid);
-        allow create, update, delete: if false;
-      }
-    }
-
-    // Sanitized developer-note feed for the retired shared-project Snag backend.
-    match /snag_review_feeds/{feedId} {
-      allow get: if feedId.matches('^[A-Za-z0-9_-]{40,120}$')
-        && resource.data.app == 'snag';
-      allow list: if false;
-      allow create, update, delete: if false;
-    }
-
-    // Beyond 100 persistent parent-controller capability.
-    // A 256-bit random document ID is the bearer key. Exact-document reads are
-    // permitted when the capability is active; collection listing is forbidden.
-    // The bearer may update only command/presence fields. Creation, identity
-    // changes and revocation remain restricted to the owner account.
-    match /beyond100_parent_controllers/{controllerId} {
-      function validControllerId() {
-        return controllerId.matches('^[A-Za-z0-9_-]{43}$');
-      }
-
-      function validBearerCommand() {
-        return request.resource.data.command == resource.data.command
-          || (
-            request.resource.data.command is map
-            && request.resource.data.command.id is string
-            && request.resource.data.command.action in [
-              'set-phase',
-              'set-outcome',
-              'set-error',
-              'set-prompt',
-              'record',
-              'next',
-              'timer',
-              'confidence',
-              'parent-note',
-              'request-state'
-            ]
-          );
-      }
-
-      function validBearerUpdate() {
-        return validControllerId()
-          && resource.data.app == 'beyond100'
-          && resource.data.active == true
-          && request.resource.data.app == resource.data.app
-          && request.resource.data.kind == resource.data.kind
-          && request.resource.data.active == true
-          && request.resource.data.ownerUid == resource.data.ownerUid
-          && request.resource.data.learnerId == resource.data.learnerId
-          && request.resource.data.controllerVersion == resource.data.controllerVersion
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'command',
-            'controllerPresence',
-            'controllerUpdatedAt'
-          ])
-          && validBearerCommand();
-      }
-
-      allow get: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        || (
-          validControllerId()
-          && resource.data.app == 'beyond100'
-          && resource.data.active == true
-        );
-      allow list: if false;
-
-      allow create: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        && validControllerId()
-        && request.resource.data.app == 'beyond100'
-        && request.resource.data.kind == 'parent-controller-capability'
-        && request.resource.data.active == true
-        && request.resource.data.ownerUid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
-
-      allow update: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        || validBearerUpdate();
-
-      allow delete: if false;
-    }
-
-    // Beyond 100 publishes only a sanitized review snapshot here.
-    // The long random document ID acts as a bearer capability. Collection
-    // listing is forbidden; only a caller who already knows the exact ID can get it.
-    match /beyond100_review_feeds/{feedId} {
-      allow get: if feedId.matches('^[A-Za-z0-9_-]{40,120}$')
-        && resource.data.app == 'beyond100';
-      allow list: if false;
-      allow create, update, delete: if request.auth != null
-        && request.auth.uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
-    }
-  }
-}
-);
-      }
-
-      function validOpenDayIdentity() {
-        return validOpenDayTokenHash()
-          && resource.data.app == 'openday'
+      function activeOpenDayToken() {
+        return resource.data.app == 'openday'
           && resource.data.active == true
           && resource.data.ownerUid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2'
           && resource.data.tokenHash == tokenHash;
       }
 
-      allow get: if validOpenDayIdentity();
+      allow get: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
+        || activeOpenDayToken();
       allow list: if false;
 
       allow create: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
-        && validOpenDayTokenHash()
         && request.resource.data.app == 'openday'
         && request.resource.data.active == true
         && request.resource.data.ownerUid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2'
-        && request.resource.data.tokenHash == tokenHash
-        && request.resource.data.state is map;
+        && request.resource.data.tokenHash == tokenHash;
 
       allow update: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2')
         || (
-          validOpenDayIdentity()
+          activeOpenDayToken()
           && request.resource.data.app == resource.data.app
-          && request.resource.data.active == resource.data.active
+          && request.resource.data.active == true
           && request.resource.data.ownerUid == resource.data.ownerUid
           && request.resource.data.tokenHash == resource.data.tokenHash
-          && request.resource.data.state is map
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'state',
-            'clientUpdatedAt',
-            'updatedAt'
-          ])
         );
 
       allow delete: if false;
