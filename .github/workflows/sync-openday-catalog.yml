@@ -1,0 +1,31 @@
+name: Sync Openday catalogue
+
+on:
+  schedule:
+    - cron: '30 9 * * *'
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "scripts/sync-openday-catalog.mjs"
+      - ".github/workflows/sync-openday-catalog.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-openday-catalog
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate sync script
+        run: node --check scripts/sync-openday-catalog.mjs
+      - name: Publish current Openday catalogue to kk-syllabus Firestore
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+        run: node scripts/sync-openday-catalog.mjs
