@@ -94,13 +94,19 @@ jobs:
 
           ACCESS_TOKEN="$(node -e 'const r=require(process.argv[1]); if(!r.access_token) throw new Error("OAuth token response contained no access_token"); process.stdout.write(r.access_token)' "$TOKEN_RESPONSE")"
 
-          curl --fail-with-body --silent --show-error \
+          RULES_STATUS="$(curl --silent --show-error \
+            -o "$RULESET_RESPONSE" \
+            -w "%{http_code}" \
             -X POST \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Content-Type: application/json" \
             --data-binary @"$RULESET_REQUEST" \
-            "https://firebaserules.googleapis.com/v1/projects/kk-syllabus/rulesets" \
-            > "$RULESET_RESPONSE"
+            "https://firebaserules.googleapis.com/v1/projects/kk-syllabus/rulesets")"
+          if [ "$RULES_STATUS" -lt 200 ] || [ "$RULES_STATUS" -ge 300 ]; then
+            echo "::error::Firestore Rules API rejected the ruleset (HTTP $RULES_STATUS)"
+            cat "$RULESET_RESPONSE"
+            exit 1
+          fi
 
           RULESET_NAME="$(node -e 'const r=require(process.argv[1]); if(!r.name) throw new Error("Rules API returned no ruleset name"); process.stdout.write(r.name)' "$RULESET_RESPONSE")"
           echo "Created ruleset: $RULESET_NAME"
