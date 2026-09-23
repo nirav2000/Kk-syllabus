@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import crypto from 'node:crypto';
 
 const project='kk-syllabus';
