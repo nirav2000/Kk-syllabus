@@ -40,7 +40,11 @@ service cloud.firestore {
     }
 
 
-    // Snag Recorder: automatic Firebase guest sessions plus bearer invite links.
+    // Snag Recorder legacy archive.
+    // Since the Snag app moved to its own Firebase project, kk-syllabus is a
+    // read-only migration/rollback source. Existing authenticated users may
+    // read only the Snag data they could access before migration; no Snag
+    // client may create, update or delete legacy data.
     function snagSignedIn() {
       return request.auth != null;
     }
@@ -58,21 +62,10 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/snag_projects/$(projectId)/members/$(request.auth.uid)).data.role;
     }
 
-    function snagCanWrite(projectId) {
-      return snagSignedIn()
-        && (
-          snagProject(projectId).data.ownerUid == request.auth.uid
-          || (snagMember(projectId) && snagMemberRole(projectId) in ['owner', 'builder', 'client', 'contractor'])
-        );
-    }
-
     match /snag_projects/{projectId} {
-      allow create: if snagSignedIn()
-        && request.resource.data.ownerUid == request.auth.uid;
       allow read: if snagSignedIn()
         && (resource.data.ownerUid == request.auth.uid || snagMember(projectId));
-      allow update: if snagCanWrite(projectId);
-      allow delete: if false;
+      allow create, update, delete: if false;
 
       match /members/{memberId} {
         allow read: if snagSignedIn()
@@ -81,23 +74,7 @@ service cloud.firestore {
             || snagProject(projectId).data.ownerUid == request.auth.uid
             || snagMember(projectId)
           );
-
-        allow create: if snagSignedIn()
-          && request.auth.uid == memberId
-          && request.resource.data.uid == request.auth.uid
-          && (
-            snagProject(projectId).data.ownerUid == request.auth.uid
-            || (
-              request.resource.data.inviteId is string
-              && exists(/databases/$(database)/documents/snag_projects/$(projectId)/invites/$(request.resource.data.inviteId))
-              && get(/databases/$(database)/documents/snag_projects/$(projectId)/invites/$(request.resource.data.inviteId)).data.active == true
-              && request.resource.data.role == get(/databases/$(database)/documents/snag_projects/$(projectId)/invites/$(request.resource.data.inviteId)).data.role
-            )
-          );
-
-        allow update: if snagCanWrite(projectId)
-          || (snagSignedIn() && request.auth.uid == memberId);
-        allow delete: if false;
+        allow create, update, delete: if false;
       }
 
       match /invites/{inviteId} {
@@ -106,38 +83,28 @@ service cloud.firestore {
           && resource.data.active == true;
         allow list: if snagSignedIn()
           && snagProject(projectId).data.ownerUid == request.auth.uid;
-        allow create, update: if snagSignedIn()
-          && snagProject(projectId).data.ownerUid == request.auth.uid;
-        allow delete: if false;
+        allow create, update, delete: if false;
       }
 
       match /snags/{snagId} {
-        // Members can collaborate on project snags. The UI narrows non-admin
-        // contractors to assigned/created work; destructive actions remain server-denied.
         allow read: if snagSignedIn()
           && (snagProject(projectId).data.ownerUid == request.auth.uid || snagMember(projectId));
-        allow create, update: if snagCanWrite(projectId);
-        allow delete: if false;
+        allow create, update, delete: if false;
 
         match /updates/{updateId} {
           allow read: if snagSignedIn()
             && (snagProject(projectId).data.ownerUid == request.auth.uid || snagMember(projectId));
-          allow create, update: if snagCanWrite(projectId);
-          allow delete: if false;
+          allow create, update, delete: if false;
         }
       }
 
-      // Per-member seen state powers genuine unread dots without a visible login.
       match /members/{memberId}/seen/{snagId} {
-        allow read, create, update: if snagSignedIn()
+        allow read: if snagSignedIn()
           && request.auth.uid == memberId
           && snagMember(projectId);
-        allow delete: if false;
+        allow create, update, delete: if false;
       }
 
-      // Contractor working notes are private to their author and project
-      // owner/admin. Collection queries are permitted, but Firestore only
-      // returns documents allowed by these rules when appropriately queried.
       match /private_notes/{noteId} {
         function noteAdmin() {
           return snagProject(projectId).data.ownerUid == request.auth.uid
@@ -148,22 +115,16 @@ service cloud.firestore {
         allow get: if snagSignedIn()
           && (noteAdmin() || resource.data.authorUid == request.auth.uid);
         allow list: if snagSignedIn() && (noteAdmin() || snagMember(projectId));
-        allow create: if snagSignedIn()
-          && snagMember(projectId)
-          && request.resource.data.authorUid == request.auth.uid;
-        allow update: if snagSignedIn()
-          && (noteAdmin() || resource.data.authorUid == request.auth.uid)
-          && request.resource.data.authorUid == resource.data.authorUid;
-        allow delete: if false;
+        allow create, update, delete: if false;
       }
     }
 
-    // Sanitized developer-note feed for Snag Recorder.
+    // Sanitized developer-note feed for the retired shared-project Snag backend.
     match /snag_review_feeds/{feedId} {
       allow get: if feedId.matches('^[A-Za-z0-9_-]{40,120}$')
         && resource.data.app == 'snag';
       allow list: if false;
-      allow create, update, delete: if isOwner('2AJSfYdtg5URWHv7HCzpNMmKIlg2');
+      allow create, update, delete: if false;
     }
 
     // Beyond 100 persistent parent-controller capability.
