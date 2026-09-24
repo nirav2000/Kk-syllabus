@@ -17,6 +17,7 @@ async function sdk() {
     const instance=app.initializeApp(firebaseConfig);
     auth=A.getAuth(instance);db=F.getFirestore(instance);api={...A,...F};
     await auth.authStateReady();
+    A.onAuthStateChanged(auth,user=>window.AppsAuth?.setAppIdentity(user,{app:'Kk-syllabus'}));
   })().catch(error=>{sdkPromise=null;throw error;});
   await sdkPromise;
 }
