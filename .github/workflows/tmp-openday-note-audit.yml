@@ -1,0 +1,76 @@
+name: Temporary Openday note/profile audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-openday-note-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Count Openday cloud note profiles without revealing note text
+        id: audit
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),crypto=require('crypto');
+          const c=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT||'null');
+          if(!c?.client_email||!c?.private_key)throw Error('credential unavailable');
+          const enc=v=>Buffer.from(JSON.stringify(v)).toString('base64url'),now=Math.floor(Date.now()/1000);
+          const unsigned=enc({alg:'RS256',typ:'JWT'})+'.'+enc({iss:c.client_email,scope:'https://www.googleapis.com/auth/datastore',aud:c.token_uri||'https://oauth2.googleapis.com/token',iat:now,exp:now+3600});
+          const sig=crypto.sign('RSA-SHA256',Buffer.from(unsigned),c.private_key).toString('base64url');
+          (async()=>{
+            const tr=await fetch(c.token_uri||'https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion:unsigned+'.'+sig})});
+            if(!tr.ok)throw Error('oauth');
+            const {access_token}=await tr.json(),headers={Authorization:'Bearer '+access_token};
+            const base='https://firestore.googleapis.com/v1/projects/kk-syllabus/databases/(default)/documents';
+            const ownerR=await fetch(base+'/app_private_state/openday',{headers});
+            let ownerNotes=0,ownerExists=false,ownerRooks=false,ownerClaremont=false;
+            if(ownerR.ok){
+              ownerExists=true;
+              const d=await ownerR.json(),notes=d.fields?.state?.mapValue?.fields?.notes?.mapValue?.fields||{};
+              ownerNotes=Object.keys(notes).length;
+              ownerRooks=Object.prototype.hasOwnProperty.call(notes,'rooks-heath');
+              ownerClaremont=Object.keys(notes).some(k=>/claremont/i.test(k));
+            } else if(ownerR.status!==404) throw Error('owner '+ownerR.status);
+            const listR=await fetch(base+'/openday_sync?pageSize=1000',{headers});
+            if(!listR.ok)throw Error('token list '+listR.status);
+            const docs=(await listR.json()).documents||[];
+            const profiles=[];
+            for(const d of docs){
+              const state=d.fields?.state?.mapValue?.fields||{},notes=state.notes?.mapValue?.fields||{};
+              profiles.push({
+                active:d.fields?.active?.booleanValue===true,
+                noteCount:Object.keys(notes).length,
+                rooks:Object.prototype.hasOwnProperty.call(notes,'rooks-heath'),
+                claremont:Object.keys(notes).some(k=>/claremont/i.test(k))
+              });
+            }
+            const out=process.env.GITHUB_OUTPUT;
+            const active=profiles.filter(x=>x.active),inactive=profiles.filter(x=>!x.active);
+            const profilesWithNotes=profiles.filter(x=>x.noteCount>0).length+(ownerNotes>0?1:0);
+            const totalNotes=ownerNotes+profiles.reduce((n,x)=>n+x.noteCount,0);
+            const vals={owner_exists:ownerExists?'yes':'no',owner_notes:ownerNotes,owner_rooks:ownerRooks?'yes':'no',owner_claremont:ownerClaremont?'yes':'no',token_profiles:profiles.length,active_token_profiles:active.length,inactive_token_profiles:inactive.length,token_profiles_with_notes:profiles.filter(x=>x.noteCount>0).length,all_profiles_with_notes:profilesWithNotes,total_note_entries_across_profiles:totalNotes};
+            for(const [k,v] of Object.entries(vals))fs.appendFileSync(out,k+'='+v+'\n');
+          })().catch(e=>{console.error(e.message);process.exit(2)});
+          NODE
+      - name: Summary
+        run: |
+          echo "owner_exists=${{ steps.audit.outputs.owner_exists }}"
+          echo "owner_notes=${{ steps.audit.outputs.owner_notes }}"
+          echo "owner_rooks=${{ steps.audit.outputs.owner_rooks }}"
+          echo "owner_claremont=${{ steps.audit.outputs.owner_claremont }}"
+          echo "token_profiles=${{ steps.audit.outputs.token_profiles }}"
+          echo "active_token_profiles=${{ steps.audit.outputs.active_token_profiles }}"
+          echo "inactive_token_profiles=${{ steps.audit.outputs.inactive_token_profiles }}"
+          echo "token_profiles_with_notes=${{ steps.audit.outputs.token_profiles_with_notes }}"
+          echo "all_profiles_with_notes=${{ steps.audit.outputs.all_profiles_with_notes }}"
+          echo "total_note_entries_across_profiles=${{ steps.audit.outputs.total_note_entries_across_profiles }}"
