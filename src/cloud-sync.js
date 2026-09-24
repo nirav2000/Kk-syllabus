@@ -54,7 +54,7 @@ export async function syncNow() {
   running=true;publish({busy:true,message:'Saving to Firestore…'});
   try {
     const catalogRef=api.collection(db,'families',OWNER_UID,'learners');
-    window.FirebaseUsageMonitor?.read(1,'profile-catalog-query','kk-syllabus');const catalog=await api.getDocsFromServer(catalogRef);
+    const catalog=await api.getDocsFromServer(catalogRef);window.FirebaseUsageMonitor?.read(Math.max(1,catalog.size||0),'profile-catalog-query','kk-syllabus','kk-syllabus','(default)');
     if(token!==generation)return;
     profiles.mergeCatalog(catalog.docs.map(d=>({...d.data(),id:d.id})).filter(descriptorValid));
     const catalogById=new Map(catalog.docs.map(d=>[d.id,d.data()]));
@@ -71,9 +71,9 @@ export async function syncNow() {
     const base=['families',OWNER_UID,'learners',id];
     const eventsRef=api.collection(db,...base,'events'), progressRef=api.doc(db,...base,'progress','state');
     const ok = await syncLearning(profileStore, {
-      async readEvents(){ window.FirebaseUsageMonitor?.read(1,'events-query','kk-syllabus');const rows=await api.getDocsFromServer(eventsRef); return rows.docs.map(d=>d.data()); },
+      async readEvents(){ const rows=await api.getDocsFromServer(eventsRef);window.FirebaseUsageMonitor?.read(Math.max(1,rows.size||0),'events-query','kk-syllabus','kk-syllabus','(default)');return rows.docs.map(d=>d.data()); },
       async writeEvents(events){if(events?.length)window.FirebaseUsageMonitor?.write(events.length,'events-batch','kk-syllabus');const batch=api.writeBatch(db);for(const event of events)batch.set(api.doc(eventsRef,event.id),event);await batch.commit();},
-      async updateMetadata(merge){return api.runTransaction(db,async tx=>{const old=await tx.get(progressRef),prior=old.exists()?old.data():null,next=merge(prior);if(JSON.stringify(prior||null)!==JSON.stringify(next)){window.FirebaseUsageMonitor?.write(1,'progress-metadata','kk-syllabus');tx.set(progressRef,next);}return next;});}
+      async updateMetadata(merge){return api.runTransaction(db,async tx=>{const old=await tx.get(progressRef);window.FirebaseUsageMonitor?.read(1,'progress-metadata-read','kk-syllabus','kk-syllabus','(default)');const prior=old.exists()?old.data():null,next=merge(prior);if(JSON.stringify(prior||null)!==JSON.stringify(next)){window.FirebaseUsageMonitor?.write(1,'progress-metadata','kk-syllabus');tx.set(progressRef,next);}return next;});}
     },()=>token===generation);
     if(!ok)return;
     }
