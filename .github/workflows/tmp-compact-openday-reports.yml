@@ -1,0 +1,59 @@
+name: Temporary compact Openday public reports
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-compact-openday-reports.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  compact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compact report collection to one document per school
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+        run: |
+          node <<'NODE'
+          const crypto=require('crypto');
+          const c=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT||'null');
+          if(!c?.client_email||!c?.private_key)throw Error('credential unavailable');
+          const enc=v=>Buffer.from(JSON.stringify(v)).toString('base64url'),now=Math.floor(Date.now()/1000);
+          const unsigned=enc({alg:'RS256',typ:'JWT'})+'.'+enc({iss:c.client_email,scope:'https://www.googleapis.com/auth/datastore',aud:c.token_uri||'https://oauth2.googleapis.com/token',iat:now,exp:now+3600});
+          const sig=crypto.sign('RSA-SHA256',Buffer.from(unsigned),c.private_key).toString('base64url');
+          (async()=>{
+            const tr=await fetch(c.token_uri||'https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion:unsigned+'.'+sig})});
+            if(!tr.ok)throw Error('oauth');
+            const {access_token}=await tr.json(),headers={Authorization:'Bearer '+access_token,'Content-Type':'application/json'};
+            const base='https://firestore.googleapis.com/v1/projects/kk-syllabus/databases/(default)/documents/openday_public_reports';
+            const lr=await fetch(base+'?pageSize=1000',{headers});
+            if(!lr.ok)throw Error('list '+lr.status);
+            const body=await lr.json(),docs=body.documents||[];
+            const groups=new Map();
+            const val=(f,k)=>f?.[k]?.stringValue||f?.[k]?.timestampValue||'';
+            for(const doc of docs){
+              const f=doc.fields||{},schoolId=val(f,'schoolId');if(!schoolId)continue;
+              const item={doc,f,schoolId,updatedAt:val(f,'updatedAt')};
+              const prior=groups.get(schoolId);
+              if(!prior||Date.parse(item.updatedAt||0)>=Date.parse(prior.updatedAt||0))groups.set(schoolId,item);
+            }
+            let writes=0,deletes=0;
+            for(const [schoolId,item] of groups){
+              const canonical=base+'/'+encodeURIComponent(schoolId);
+              const wr=await fetch(canonical,{method:'PATCH',headers,body:JSON.stringify({fields:item.f})});
+              if(!wr.ok)throw Error('write '+schoolId+' '+wr.status);writes++;
+            }
+            for(const doc of docs){
+              const id=decodeURIComponent(doc.name.split('/').pop()),schoolId=val(doc.fields||{},'schoolId');
+              if(!schoolId||id===schoolId)continue;
+              const dr=await fetch(doc.name.replace('projects/','https://firestore.googleapis.com/v1/projects/'),{method:'DELETE',headers});
+              if(!dr.ok&&dr.status!==404)throw Error('delete '+dr.status);deletes++;
+            }
+            console.log('Compacted Openday public reports: '+docs.length+' documents -> '+groups.size+' school documents; canonical writes '+writes+'; legacy deletes '+deletes);
+          })().catch(e=>{console.error(e.message);process.exit(2)});
+          NODE
