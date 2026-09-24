@@ -39,39 +39,42 @@ service cloud.firestore {
     // Reports are append-only and publicly readable so every visitor sees the
     // same reported corrections. Personal visit notes stay in private state.
     match /openday_public_reports/{reportId} {
+      function validOpenDayReport() {
+        return request.resource.data.keys().hasOnly([
+            'app',
+            'schoolId',
+            'date',
+            'startTime',
+            'endTime',
+            'contributorId',
+            'contributorLabel',
+            'status',
+            'updatedAt'
+          ])
+          && request.resource.data.app == 'openday'
+          && request.resource.data.status == 'reported'
+          && request.resource.data.schoolId == reportId
+          && request.resource.data.schoolId is string
+          && request.resource.data.schoolId.size() > 0
+          && request.resource.data.schoolId.size() <= 120
+          && request.resource.data.date is string
+          && request.resource.data.date.size() <= 10
+          && request.resource.data.startTime is string
+          && request.resource.data.startTime.size() <= 5
+          && request.resource.data.endTime is string
+          && request.resource.data.endTime.size() <= 5
+          && request.resource.data.contributorId is string
+          && request.resource.data.contributorId.size() >= 8
+          && request.resource.data.contributorId.size() <= 80
+          && request.resource.data.contributorLabel is string
+          && request.resource.data.contributorLabel.size() >= 3
+          && request.resource.data.contributorLabel.size() <= 80
+          && request.resource.data.updatedAt == request.time;
+      }
+
       allow read: if true;
-
-      allow create: if request.resource.data.keys().hasOnly([
-          'app',
-          'schoolId',
-          'date',
-          'startTime',
-          'endTime',
-          'contributorId',
-          'contributorLabel',
-          'status',
-          'updatedAt'
-        ])
-        && request.resource.data.app == 'openday'
-        && request.resource.data.status == 'reported'
-        && request.resource.data.schoolId is string
-        && request.resource.data.schoolId.size() > 0
-        && request.resource.data.schoolId.size() <= 120
-        && request.resource.data.date is string
-        && request.resource.data.date.size() <= 10
-        && request.resource.data.startTime is string
-        && request.resource.data.startTime.size() <= 5
-        && request.resource.data.endTime is string
-        && request.resource.data.endTime.size() <= 5
-        && request.resource.data.contributorId is string
-        && request.resource.data.contributorId.size() >= 8
-        && request.resource.data.contributorId.size() <= 80
-        && request.resource.data.contributorLabel is string
-        && request.resource.data.contributorLabel.size() >= 3
-        && request.resource.data.contributorLabel.size() <= 80
-        && request.resource.data.updatedAt == request.time;
-
-      allow update, delete: if false;
+      allow create, update: if validOpenDayReport();
+      allow delete: if false;
     }
 
 
