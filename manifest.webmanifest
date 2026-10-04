@@ -1,1 +1,17 @@
-{"name":"Curious Path","short_name":"Curious Path","start_url":"./","display":"standalone","background_color":"#f8f5ed","theme_color":"#346653"}
+{
+  "name": "Curious Path",
+  "short_name": "Curious Path",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8f5ed",
+  "theme_color": "#346653",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
