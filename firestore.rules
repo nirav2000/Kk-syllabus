@@ -24,6 +24,29 @@ service cloud.firestore {
       }
     }
 
+    // TouchType learner data: membership is authoritative, never client-created.
+    function touchtypeMember(learnerId) {
+      return request.auth != null && exists(/databases/$(database)/documents/touchtype_memberships/$(request.auth.uid + '_' + learnerId));
+    }
+    match /touchtype_learners/{learnerId} {
+      allow read: if touchtypeMember(learnerId);
+      allow create: if request.auth != null && request.auth.uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2'
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.learnerId == learnerId;
+      allow update: if touchtypeMember(learnerId)
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.learnerId == learnerId;
+      allow delete: if false;
+    }
+    match /touchtype_memberships/{membershipId} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null && request.auth.uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2'
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role == 'parent'
+        && membershipId == request.auth.uid + '_' + request.resource.data.learnerId;
+      allow update, delete: if false;
+    }
+
     // TouchType private learner snapshots. Existing parent UID is preserved.
     match /touchtype_users/{uid} {
       allow read, create, update: if isOwner(uid)
