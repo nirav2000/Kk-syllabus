@@ -34,6 +34,7 @@ service cloud.firestore {
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.learnerId == learnerId;
       allow update: if touchtypeMember(learnerId)
+        && get(/databases/$(database)/documents/touchtype_memberships/$(request.auth.uid + '_' + learnerId)).data.role in ['parent', 'learner']
         && request.resource.data.ownerUid == resource.data.ownerUid
         && request.resource.data.learnerId == learnerId;
       allow delete: if false;
