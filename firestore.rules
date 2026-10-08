@@ -24,6 +24,17 @@ service cloud.firestore {
       }
     }
 
+    // TouchType private learner snapshots. Existing parent UID is preserved.
+    match /touchtype_users/{uid} {
+      allow read, create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['app','updatedAt','profiles','currentId','schemaVersion'])
+        && request.resource.data.app == 'touchtype'
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.profiles is list
+        && request.resource.data.profiles.size() <= 30;
+      allow delete: if false;
+    }
+
     // Openday reuses the same parent Firebase Authentication account as
     // Kk-syllabus. Public catalogue publishing is performed by an authorised
     // backend/service account; private browser state remains owner-only.
