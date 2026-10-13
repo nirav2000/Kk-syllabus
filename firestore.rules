@@ -7,6 +7,31 @@ service cloud.firestore {
         && uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
     }
 
+    // Dol Learning Sync: each Firebase account owns its own immutable learning chunks.
+    // This rule is additive and does not grant any access to existing family data.
+    match /learningSyncApps/dol/users/{userId}/learners/{learnerId}/chunks/{chunkId} {
+      function dolOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      function dolChunkValid() {
+        return request.resource.data.keys().hasOnly(['schema','id','createdAt','source','events','sessions','ownerUid'])
+          && request.resource.data.schema == 1
+          && request.resource.data.id == chunkId
+          && request.resource.data.ownerUid == userId
+          && request.resource.data.createdAt is number
+          && request.resource.data.source is string
+          && request.resource.data.events is list
+          && request.resource.data.sessions is list
+          && request.resource.data.events.size() <= 100
+          && request.resource.data.sessions.size() <= 100
+          && request.resource.data.size() <= 400000;
+      }
+      allow get, list: if dolOwner();
+      allow create: if dolOwner() && dolChunkValid();
+      allow update: if dolOwner() && dolChunkValid() && request.resource.data == resource.data;
+      allow delete: if false;
+    }
+
     match /families/{uid}/learners/{learnerId} {
       allow read, create, update: if isOwner(uid);
       allow delete: if false;
