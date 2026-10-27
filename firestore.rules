@@ -69,11 +69,15 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/families/$(uid)/learners/$(learnerId)/approvedDevices/$(request.auth.uid))
           && request.resource.data.keys().hasOnly([
             'app','schema','kind','learner','title','lessonId',
-            'answer','date','choice','originUid','createdAt'
+            'answer','date','choice','originUid','createdAt','feedbackText'
           ])
           && request.resource.data.app == 'comprehension'
           && request.resource.data.schema == 1
-          && request.resource.data.kind == 'answer'
+          && request.resource.data.kind in ['answer', 'feedback']
+          && (request.resource.data.kind == 'answer' || (
+            request.resource.data.feedbackText is string
+            && request.resource.data.feedbackText.size() <= 3000
+          ))
           && request.resource.data.learner == 'sai'
           && request.resource.data.originUid == request.auth.uid
           && request.resource.data.title is string
