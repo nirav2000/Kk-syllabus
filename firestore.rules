@@ -41,8 +41,51 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Comprehension Coach: a parent can approve a child device, but child
+      // authentication cannot approve itself or inspect family records.
+      match /approvedDevices/{deviceUid} {
+        allow get: if isOwner(uid) ||
+          (request.auth != null && request.auth.uid == deviceUid);
+        allow list: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid)
+          && uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2'
+          && learnerId == 'sai'
+          && request.resource.data.keys().hasOnly(['app','role','deviceUid','learnerId','approvedAt'])
+          && request.resource.data.app == 'comprehension'
+          && request.resource.data.role == 'learner'
+          && request.resource.data.deviceUid == deviceUid
+          && request.resource.data.learnerId == 'sai';
+      }
+
       match /events/{eventId} {
-        allow read, create: if isOwner(uid);
+        allow read: if isOwner(uid);
+        // Owner can write existing family events unchanged.
+        // The learner can only append tightly-scoped English answer records.
+        allow create: if isOwner(uid) || (
+          uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2'
+          && learnerId == 'sai'
+          && request.auth != null
+          && exists(/databases/$(database)/documents/families/$(uid)/learners/$(learnerId)/approvedDevices/$(request.auth.uid))
+          && request.resource.data.keys().hasOnly([
+            'app','schema','kind','learner','title','lessonId',
+            'answer','date','choice','originUid','createdAt'
+          ])
+          && request.resource.data.app == 'comprehension'
+          && request.resource.data.schema == 1
+          && request.resource.data.kind == 'answer'
+          && request.resource.data.learner == 'sai'
+          && request.resource.data.originUid == request.auth.uid
+          && request.resource.data.title is string
+          && request.resource.data.title.size() <= 180
+          && request.resource.data.lessonId is string
+          && request.resource.data.lessonId.size() <= 120
+          && request.resource.data.answer is string
+          && request.resource.data.answer.size() > 0
+          && request.resource.data.answer.size() <= 4000
+          && request.resource.data.date is number
+          && request.resource.data.choice is number
+          && request.resource.data.createdAt == request.time
+        );
         allow update: if isOwner(uid)
           && request.resource.data == resource.data;
         allow delete: if false;
