@@ -47,7 +47,8 @@ service cloud.firestore {
         allow get: if isOwner(uid) ||
           (request.auth != null && request.auth.uid == deviceUid);
         allow list: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid)
+        allow delete: if isOwner(uid) && uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2' && learnerId == 'sai';
+        allow create, update: if isOwner(uid)
           && uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2'
           && learnerId == 'sai'
           && request.resource.data.keys().hasOnly(['app','role','deviceUid','learnerId','approvedAt'])
