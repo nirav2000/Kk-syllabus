@@ -2,6 +2,10 @@ name: Restore App Monitor Firebase credential (manual, secrets only)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restore-app-monitor-firebase.yml'
 
 permissions:
   contents: read
