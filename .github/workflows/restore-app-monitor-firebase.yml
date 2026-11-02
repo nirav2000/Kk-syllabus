@@ -1,0 +1,67 @@
+name: Restore App Monitor Firebase credential (manual, secrets only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: restore-app-monitor-firebase-secret
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check both existing credentials, without revealing values
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            echo "::error::Existing Kk-syllabus service account secret not available"
+            exit 1
+          fi
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error::Cloudflare API credentials are not available in Kk-syllabus GitHub Actions. Add restricted CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets; do not paste the Firebase JSON into chat."
+            exit 1
+          fi
+          node -e 'const v=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT); if(v.project_id!=="kk-syllabus"||v.type!=="service_account"||!v.client_email||!v.private_key)throw Error("This is not a kk-syllabus service account"); console.log("Validated existing kk-syllabus service account format")'
+      - name: Verify Firebase credential can read Firestore
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+        run: |
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          const a=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+          const b64=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
+          const now=Math.floor(Date.now()/1000);
+          const claims={iss:a.client_email,scope:'https://www.googleapis.com/auth/datastore',aud:a.token_uri||'https://oauth2.googleapis.com/token',iat:now,exp:now+1200};
+          const payload=b64({alg:'RS256',typ:'JWT'})+'.'+b64(claims);
+          const signature=crypto.sign('RSA-SHA256',Buffer.from(payload),a.private_key).toString('base64url');
+          const request=new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion:payload+'.'+signature});
+          const reply=await fetch(claims.aud,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:request});
+          if(!reply.ok)throw Error('Google OAuth rejected the existing credential (HTTP '+reply.status+')');
+          const token=(await reply.json()).access_token;
+          if(!token)throw Error('No access token was issued');
+          const path='https://firestore.googleapis.com/v1/projects/kk-syllabus/databases/(default)/documents/families/2AJSfYdtg5URWHv7HCzpNMmKIlg2/learners/sai/progress/inclass-notes-credential-healthcheck';
+          const test=await fetch(path,{headers:{Authorization:'Bearer '+token}});
+          if(test.status!==200&&test.status!==404)throw Error('Service account has insufficient Firestore data permissions (HTTP '+test.status+'). Grant Cloud Datastore User to this service account before restoring the secret.');
+          console.log('Firestore data-read permission check passed');
+          NODE
+      - name: Restore Cloudflare Worker secret without printing its value
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" | npx --yes wrangler@4.86.0 secret put FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON --name apps-monitor-api
+          echo "Restored Worker secret; no private key was displayed or stored in the repository"
