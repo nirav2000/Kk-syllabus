@@ -388,5 +388,32 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null
         && request.auth.uid == '2AJSfYdtg5URWHv7HCzpNMmKIlg2';
     }
+    // Warranty Ease: the existing owner account can create immutable encrypted-snapshot
+    // metadata only. The complete records and documents are encrypted on the device
+    // before upload to the separate private Cloudflare R2 backup service.
+    match /warrantyEase/{userId}/snapshots/{snapshotId} {
+      function validWarrantySnapshot() {
+        return snapshotId.matches('^[A-Za-z0-9-]{5,80}$')
+          && request.resource.data.keys().hasOnly([
+            'schema','ownerUid','archiveId','sha256','bytes','savedAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'schema','ownerUid','archiveId','sha256','bytes','savedAt'
+          ])
+          && request.resource.data.schema == 1
+          && request.resource.data.ownerUid == userId
+          && request.resource.data.archiveId == snapshotId
+          && request.resource.data.sha256 is string
+          && request.resource.data.sha256.matches('^[0-9a-f]{64}$')
+          && request.resource.data.bytes is int
+          && request.resource.data.bytes >= 48
+          && request.resource.data.bytes <= 31457280
+          && request.resource.data.savedAt is timestamp;
+      }
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && validWarrantySnapshot();
+      allow update, delete: if false;
+    }
+
   }
 }
