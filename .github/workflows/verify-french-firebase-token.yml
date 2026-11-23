@@ -1,0 +1,63 @@
+name: Verify existing Firebase custom-token sign-in (read-only)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/verify-french-firebase-token.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Check out pinned Firebase bridge helper and public config
+        uses: actions/checkout@v4
+        with:
+          repository: nirav2000/Apps
+          ref: b9231276bfb8dec5afe3c01d80b46a1adebdd8e0
+          path: apps
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Firebase accepts custom token for current owner and read-only Firestore access
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import {webcrypto} from 'node:crypto';
+          import {mintFrenchFirebaseToken} from './apps/french-teaching/v1/firebase-passkey-bridge.js';
+          const service=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT||'null');
+          if(!service||service.project_id!=='kk-syllabus')throw Error('Original Firebase signing credential unavailable or wrong project');
+          const vars=JSON.parse(readFileSync('./apps/wrangler-app-monitor.jsonc','utf8')).vars;
+          if(vars.FCM_PROJECT_ID!=='kk-syllabus')throw Error('Public Firebase project mismatch');
+          const expectedUid='2AJSfYdtg5URWHv7HCzpNMmKIlg2';
+          const jwt=await mintFrenchFirebaseToken(service,{cryptoImpl:webcrypto});
+          const apiUrl='https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key='+encodeURIComponent(vars.FCM_WEB_API_KEY);
+          const authResponse=await fetch(apiUrl,{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({token:jwt,returnSecureToken:true}),
+            signal:AbortSignal.timeout(20000)
+          });
+          if(!authResponse.ok)throw Error('Firebase rejected custom JWT (HTTP '+authResponse.status+'). No credentials were logged.');
+          const result=await authResponse.json();
+          if(result.localId!==expectedUid||typeof result.idToken!=='string'||result.idToken.length<100)
+            throw Error('Returned Firebase identity is not the existing parent account');
+          console.log('PASS: Original Kk-syllabus signing key exchanged for existing parent Firebase Auth identity.');
+          // Verify Firestore owner-scoped rule permits read-only access; an absent
+          // record returns 404 and is as valid as 200 for this authorisation check.
+          const url='https://firestore.googleapis.com/v1/projects/kk-syllabus/databases/(default)/documents/families/'+expectedUid+
+            '/learners/adult/progress/evidence-next-french-v1-cloud-read-healthcheck';
+          const dbResponse=await fetch(url,{
+            headers:{Authorization:'Bearer '+result.idToken},
+            signal:AbortSignal.timeout(20000)
+          });
+          if(![200,404].includes(dbResponse.status))
+            throw Error('Firebase owner-scoped Firestore read rejected (HTTP '+dbResponse.status+'). No user data was logged.');
+          console.log('PASS: Existing parent Firebase Auth identity has Firestore read access to adult learning progress.');
+          console.log('Test issued no Firestore writes, no production Worker changes, and did not print any keys or tokens.');
+          NODE
