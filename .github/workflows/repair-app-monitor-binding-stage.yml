@@ -1,0 +1,96 @@
+name: Repair App Monitor Firebase bridge bindings (stage only)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-app-monitor-binding-stage.yml'
+      - 'scripts/repair-app-monitor-version.mjs'
+      - 'scripts/repair-app-monitor-version.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kk-syllabus-app-monitor-repair-stage
+  cancel-in-progress: false
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      APP_MONITOR_PREVIOUS: 0bb46ca0-65bc-4b45-b8e8-1ab55f31352d
+      APP_MONITOR_STAGED: a80d0195-93d6-48f4-9145-c2def4f7a86f
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check out pinned App Monitor smoke tests
+        uses: actions/checkout@v4
+        with:
+          repository: nirav2000/Apps
+          ref: b9231276bfb8dec5afe3c01d80b46a1adebdd8e0
+          path: apps
+          persist-credentials: false
+      - name: Test safe binding inheritance without credentials
+        run: |
+          node --check scripts/repair-app-monitor-version.mjs
+          node --test scripts/repair-app-monitor-version.test.mjs
+      - name: Verify active passkey service and pinned rollback version
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          node apps/tests/app-monitor-auth-live.mjs
+          npx --yes wrangler@4.167.0 deployments list --name apps-monitor-api --json > "$RUNNER_TEMP/deployments-before.json"
+          node <<'NODE'
+          const fs=require('node:fs'),d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/deployments-before.json','utf8'));
+          const live=(d.at(-1)?.versions||[]).filter(x=>x.percentage>0);
+          if(live.length!==1||live[0].percentage!==100||live[0].version_id!==process.env.APP_MONITOR_PREVIOUS)
+            throw Error('Active Worker differs from pinned rollback version — fail closed');
+          console.log('Active production verified: '+live[0].version_id.slice(0,8));
+          NODE
+      - name: Stage new version with explicit Biz and Firebase inheritance
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/repair-app-monitor-version.mjs
+      - name: Verify all bindings and new preview; never promote production
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.167.0 versions view "$APP_MONITOR_REPAIRED" --name apps-monitor-api --json > "$RUNNER_TEMP/repaired-worker.json"
+          node <<'NODE'
+          const fs=require('node:fs'),x=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/repaired-worker.json','utf8'));
+          const names=JSON.stringify(x.resources||{});
+          for(const n of ['FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON','BIZ_CATALOG_GITHUB_TOKEN','APP_MONITOR_DATA','ALLOWED_ORIGIN','FCM_PROJECT_ID'])
+            if(!names.includes(n))throw Error('Staged Worker missing binding '+n);
+          console.log('Repaired version has every required binding name, no secrets read');
+          NODE
+          prefix=$(printf '%.8s' "$APP_MONITOR_REPAIRED")
+          export APP_MONITOR_API_BASE="https://$prefix-apps-monitor-api.nirav2000-github.workers.dev"
+          expected='2026.11.23.french-passkey-firebase-v1'
+          ready=''
+          for attempt in $(seq 1 12); do
+            actual=$(curl -sS --max-time 12 "$APP_MONITOR_API_BASE/health?repair=$attempt" |
+              node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{try{console.log(JSON.parse(s).build||"")}catch{}})' || true)
+            if [ "$actual" = "$expected" ]; then ready=1; break; fi
+            sleep 3
+          done
+          test "$ready" = 1
+          node apps/tests/app-monitor-auth-live.mjs
+          origin='Origin: https://nirav2000.github.io'
+          endpoint="$APP_MONITOR_API_BASE/app-monitor/owner/french/firebase-token"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "$origin" "$endpoint")" = 405
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "$origin" -X POST "$endpoint")" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://other.invalid' -X POST "$endpoint")" = 403
+          npx --yes wrangler@4.167.0 deployments list --name apps-monitor-api --json > "$RUNNER_TEMP/deployments-after.json"
+          node <<'NODE'
+          const fs=require('node:fs'),d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/deployments-after.json','utf8'));
+          const live=(d.at(-1)?.versions||[]).filter(x=>x.percentage>0);
+          if(live.length!==1||live[0].percentage!==100||live[0].version_id!==process.env.APP_MONITOR_PREVIOUS)
+            throw Error('Production changed while staging — fail closed');
+          console.log('PASS: staged bridge, existing passkeys and endpoints healthy; production unchanged');
+          NODE
