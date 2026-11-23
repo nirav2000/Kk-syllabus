@@ -1,0 +1,160 @@
+name: Promote verified App Monitor Firebase passkey bridge with automatic rollback
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/promote-app-monitor-firebase-bridge.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kk-syllabus-app-monitor-firebase-promotion
+  cancel-in-progress: false
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      APP_MONITOR_PREVIOUS: 0bb46ca0-65bc-4b45-b8e8-1ab55f31352d
+      EXPECTED_TAG: kk-french-explicit-inherit-7a133639fe
+      EXPECTED_BUILD: 2026.11.23.french-passkey-firebase-v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Checkout pinned App Monitor smoke tests and Worker config
+        uses: actions/checkout@v4
+        with:
+          repository: nirav2000/Apps
+          ref: b9231276bfb8dec5afe3c01d80b46a1adebdd8e0
+          path: apps
+          persist-credentials: false
+      - name: Confirm original production and uniquely approved staging version
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          node apps/tests/app-monitor-auth-live.mjs
+          npx --yes wrangler@4.167.0 deployments list --name apps-monitor-api --json > "$RUNNER_TEMP/deployments-pre.json"
+          npx --yes wrangler@4.167.0 versions list --name apps-monitor-api --json > "$RUNNER_TEMP/versions.json"
+          node <<'NODE'
+          const fs=require('node:fs');
+          const deployments=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/deployments-pre.json','utf8'));
+          const live=(deployments.at(-1)?.versions||[]).filter(x=>x.percentage>0);
+          if(live.length!==1||live[0].percentage!==100||live[0].version_id!==process.env.APP_MONITOR_PREVIOUS)
+            throw Error('Active Worker changed; cannot safely promote');
+          const versions=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/versions.json','utf8'));
+          const matching=versions.filter(x=>x.annotations?.['workers/tag']===process.env.EXPECTED_TAG);
+          if(matching.length!==1||!matching[0].metadata?.has_preview||!matching[0].id)
+            throw Error('Verified staging tag not unique or preview unavailable');
+          fs.appendFileSync(process.env.GITHUB_ENV,'APP_MONITOR_REPAIRED='+matching[0].id+'\n');
+          console.log('Live baseline '+live[0].version_id.slice(0,8)+'; verified target '+matching[0].id.slice(0,8));
+          NODE
+          npx --yes wrangler@4.167.0 versions view "$APP_MONITOR_PREVIOUS" --name apps-monitor-api --json > "$RUNNER_TEMP/old-worker.json"
+          node <<'NODE'
+          const fs=require('node:fs');
+          const x=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/old-worker.json','utf8'));
+          const names=JSON.stringify(x.resources||{});
+          for(const n of ['BIZ_CATALOG_GITHUB_TOKEN','FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON','APP_MONITOR_DATA'])
+            if(!names.includes(n))throw Error('Original production is missing critical resource '+n);
+          NODE
+      - name: Recheck repaired candidate bindings, passkeys and secure routes before deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.167.0 versions view "$APP_MONITOR_REPAIRED" --name apps-monitor-api --json > "$RUNNER_TEMP/new-worker.json"
+          node <<'NODE'
+          const fs=require('node:fs');
+          const x=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/new-worker.json','utf8'));
+          const names=JSON.stringify(x.resources||{});
+          for(const n of ['BIZ_CATALOG_GITHUB_TOKEN','FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON','APP_MONITOR_DATA','ALLOWED_ORIGIN','FCM_PROJECT_ID'])
+            if(!names.includes(n))throw Error('Candidate lost required binding '+n);
+          console.log('Repaired candidate retains all critical binding names');
+          NODE
+          prefix=$(printf '%.8s' "$APP_MONITOR_REPAIRED")
+          export APP_MONITOR_API_BASE="https://$prefix-apps-monitor-api.nirav2000-github.workers.dev"
+          ready=''
+          for attempt in $(seq 1 12); do
+            build=$(curl -sS --max-time 12 "$APP_MONITOR_API_BASE/health?preflight=$attempt" |
+              node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{try{console.log(JSON.parse(s).build||"")}catch{}})' || true)
+            if [ "$build" = "$EXPECTED_BUILD" ]; then ready=1; break; fi
+            sleep 3
+          done
+          test "$ready" = 1
+          node apps/tests/app-monitor-auth-live.mjs
+          endpoint="$APP_MONITOR_API_BASE/app-monitor/owner/french/firebase-token"
+          origin='Origin: https://nirav2000.github.io'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "$origin" "$endpoint")" = 405
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "$origin" -X POST "$endpoint")" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://untrusted.invalid' -X POST "$endpoint")" = 403
+          echo 'Candidate passkey service and fail-closed Firebase route verified.'
+      - name: Promote approved version only if original production still active
+        id: promote
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.167.0 deployments list --name apps-monitor-api --json > "$RUNNER_TEMP/deployments-immediate.json"
+          node <<'NODE'
+          const fs=require('node:fs'),d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/deployments-immediate.json','utf8'));
+          const live=(d.at(-1)?.versions||[]).filter(x=>x.percentage>0);
+          if(live.length!==1||live[0].percentage!==100||live[0].version_id!==process.env.APP_MONITOR_PREVIOUS)
+            throw Error('Production changed since preflight; refuse promotion');
+          NODE
+          npx --yes wrangler@4.167.0 versions deploy "$APP_MONITOR_REPAIRED@100%" \
+            --name apps-monitor-api --yes -c apps/wrangler-app-monitor.jsonc
+          echo 'Submitted verified Worker promotion. Previous version retained for rollback.'
+      - name: Verify live production passkeys and all sensitive endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          api='https://apps-monitor-api.nirav2000-github.workers.dev'
+          ready=''
+          for attempt in $(seq 1 35); do
+            build=$(curl -sS --max-time 12 -H 'Cache-Control: no-cache' "$api/health?release=$GITHUB_SHA&attempt=$attempt" |
+              node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{try{console.log(JSON.parse(s).build||"")}catch{}})' || true)
+            if [ "$build" = "$EXPECTED_BUILD" ]; then ready=1; break; fi
+            sleep 3
+          done
+          test "$ready" = 1
+          node apps/tests/app-monitor-auth-live.mjs
+          origin='Origin: https://nirav2000.github.io'
+          endpoint="$api/app-monitor/owner/french/firebase-token"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "$origin" "$endpoint")" = 405
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "$origin" -X POST "$endpoint")" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://untrusted.invalid' -X POST "$endpoint")" = 403
+          for path in '/app-monitor/owner/data/dashboard' '/app-monitor/notes?appId=app-monitor' '/app-monitor/nvr/activities' '/app-monitor/repository-privacy' '/app-monitor/apps-catalog'; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "$origin" "$api$path")
+            test "$code" = 401
+          done
+          npx --yes wrangler@4.167.0 deployments list --name apps-monitor-api --json > "$RUNNER_TEMP/deployments-final.json"
+          node <<'NODE'
+          const fs=require('node:fs'),d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/deployments-final.json','utf8'));
+          const now=(d.at(-1)?.versions||[]).filter(x=>x.percentage>0);
+          if(now.length!==1||now[0].percentage!==100||now[0].version_id!==process.env.APP_MONITOR_REPAIRED)
+            throw Error('Production has not converged on exactly the approved version');
+          console.log('PASS: deployed Firebase passkey bridge with existing R2/Biz bindings, all private routes protected');
+          NODE
+      - name: Automatic rollback if promotion or post-deployment tests fail
+        if: ${{ failure() && steps.promote.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'Post-promotion verification failed; restoring previous App Monitor version.'
+          npx --yes wrangler@4.167.0 versions deploy "$APP_MONITOR_PREVIOUS@100%" \
+            --name apps-monitor-api --yes -c apps/wrangler-app-monitor.jsonc
+          for attempt in $(seq 1 20); do
+            build=$(curl -sS --max-time 12 "https://apps-monitor-api.nirav2000-github.workers.dev/health?rollback=$attempt" |
+              node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{try{console.log(JSON.parse(s).build||"")}catch{}})' || true)
+            if [ "$build" = '2026.11.09.nvr-private-v1' ]; then
+              node apps/tests/app-monitor-auth-live.mjs
+              echo 'Rollback verified: original production restored.'
+              exit 0
+            fi
+            sleep 3
+          done
+          echo 'Rollback submitted, but original build could not be confirmed at the edge.'
+          exit 1
