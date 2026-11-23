@@ -1,8 +1,6 @@
 name: Verify existing Firebase custom-token sign-in (read-only)
 on:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/verify-french-firebase-token.yml']
+  # Does not run automatically for later repository changes.
   workflow_dispatch:
 permissions:
   contents: read
