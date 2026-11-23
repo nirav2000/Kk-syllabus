@@ -1,9 +1,6 @@
 name: Promote verified App Monitor Firebase passkey bridge with automatic rollback
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/promote-app-monitor-firebase-bridge.yml'
+  # Production changes always require an explicit operator action.
   workflow_dispatch:
 permissions:
   contents: read
