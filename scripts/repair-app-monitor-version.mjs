@@ -17,11 +17,10 @@ export function buildPayload(active,stage,activeId,stagedId){
     throw Error('Active production does not have the expected private Biz binding');
   if(!b.has('FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON'))
     throw Error('Staged candidate is missing the new Firebase binding');
-  if(a.get('BIZ_CATALOG_GITHUB_TOKEN')?.type!=='secret_text' ||
+  const bizType=a.get('BIZ_CATALOG_GITHUB_TOKEN')?.type;
+  if(!['secret_text','plain_text'].includes(bizType) ||
      b.get('FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON')?.type!=='secret_text')
-    throw Error('Unexpected binding metadata types (names only): Biz='+
-      String(a.get('BIZ_CATALOG_GITHUB_TOKEN')?.type||'missing')+
-      ', Firebase='+String(b.get('FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON')?.type||'missing'));
+    throw Error('Unexpected Biz/Firebase binding types; refusing to copy or expose values');
   for(const name of mandatory){
     if(a.has(name)&&b.has(name)&&a.get(name).type!==b.get(name).type)
       throw Error('Candidate changed binding type of '+name);
@@ -42,6 +41,12 @@ export function buildPayload(active,stage,activeId,stagedId){
   }
   for(const value of a.values()){
     if(b.has(value.name))continue;
+    if(value.name==='BIZ_CATALOG_GITHUB_TOKEN'&&value.type==='plain_text'){
+      // The existing Worker stores this token as a plain-text var, not a secret.
+      // Preserve by immutable version reference; never read or echo .text.
+      bindings.push({name:value.name,type:'inherit',version_id:activeId});
+      continue;
+    }
     if(value.type!=='secret_text'&&value.type!=='secret_key')
       throw Error('Refusing to drop existing non-secret binding '+value.name);
     bindings.push({name:value.name,type:'inherit',version_id:activeId});

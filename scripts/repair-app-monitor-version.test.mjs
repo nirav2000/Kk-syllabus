@@ -7,7 +7,7 @@ const source=Buffer.from("const BUILD='2026.11.23.french-passkey-firebase-v1'; e
 const active={bindings:[
   {name:'APP_MONITOR_DATA',type:'r2_bucket',bucket_name:'apps-monitor-data'},
   {name:'FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON',type:'secret_text'},
-  {name:'BIZ_CATALOG_GITHUB_TOKEN',type:'secret_text'},
+  {name:'BIZ_CATALOG_GITHUB_TOKEN',type:'plain_text',text:'SYNTHETIC-NOT-A-REAL-TOKEN'},
   {name:'ALLOWED_ORIGIN',type:'plain_text',text:'https://nirav2000.github.io'},
   {name:'FCM_PROJECT_ID',type:'plain_text',text:'kk-syllabus'}]};
 const stage={...active,main_module:'worker.js',compatibility_date:'2026-09-24',
@@ -25,6 +25,7 @@ test('preserves Biz from specifically pinned ACTIVE production and Firebase from
   assert.deepEqual(p.modules,[stage.modules[0]]);
   assert.equal(p.main_module,'worker.js');
   assert.equal(JSON.stringify(p).includes('PRIVATE KEY'),false);
+  assert.equal(JSON.stringify(p).includes('SYNTHETIC-NOT-A-REAL-TOKEN'),false);
 });
 test('never assumes latest version contains Biz or secrets; requires immutable version IDs',()=>{
   const payload=buildPayload(active,stage,activeId,stagedId);
