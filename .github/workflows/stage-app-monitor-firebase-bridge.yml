@@ -1,0 +1,150 @@
+name: Stage App Monitor Firebase bridge from existing credential (no deployment)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/stage-app-monitor-firebase-bridge.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: stage-app-monitor-firebase-bridge
+  cancel-in-progress: false
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact approved public Apps commit
+        uses: actions/checkout@v4
+        with:
+          repository: nirav2000/Apps
+          ref: b9231276bfb8dec5afe3c01d80b46a1adebdd8e0
+          path: apps
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify bridge and existing Owner Console code
+        working-directory: apps
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          node --check app-monitor-worker.js
+          node --check french-teaching/v1/firebase-passkey-bridge.js
+          node --test tests/french-firebase-passkey.test.mjs
+          node --test app-monitor-owner-data.test.mjs app-monitor-owner-routes.test.mjs
+      - name: Check active passkeys and capture unchanged production baseline
+        working-directory: apps
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          node tests/app-monitor-auth-live.mjs
+          npx wrangler deployments list --name apps-monitor-api --json > "$RUNNER_TEMP/active-deployments.json"
+          node <<'NODE'
+          const fs=require('node:fs'),data=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/active-deployments.json','utf8'));
+          const active=(data.at(-1)?.versions||[]).filter(x=>x.percentage>0);
+          if(active.length!==1||active[0].percentage!==100)throw Error('Active Worker must be one version at 100%');
+          const id=active[0].version_id;
+          if(!/^[a-f0-9-]{36}$/.test(id))throw Error('Unexpected active version identifier');
+          fs.appendFileSync(process.env.GITHUB_ENV,'APP_MONITOR_PREVIOUS='+id+'\n');
+          console.log('Live App Monitor baseline passed: '+id.slice(0,8));
+          NODE
+          active=$(node -p 'require("fs").readFileSync(process.env.GITHUB_ENV,"utf8").match(/APP_MONITOR_PREVIOUS=([a-f0-9-]+)/)[1]')
+          npx wrangler versions view "$active" --name apps-monitor-api --json > "$RUNNER_TEMP/active-worker.json"
+      - name: Stage code and existing Kk-syllabus Firebase credential together
+        working-directory: apps
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          secret_file="$RUNNER_TEMP/worker-secrets.json"
+          trap 'rm -f "$secret_file"' EXIT
+          export SECRET_FILE="$secret_file"
+          node <<'NODE'
+          const fs=require('node:fs'),value=process.env.FIREBASE_SERVICE_ACCOUNT||'';
+          if(!value)throw Error('Existing Kk-syllabus GitHub Actions Firebase credential is absent');
+          const c=JSON.parse(value);
+          if(c.type!=='service_account'||c.project_id!=='kk-syllabus'||
+             !c.private_key?.startsWith('-----BEGIN PRIVATE KEY-----')||
+             !c.client_email?.endsWith('.iam.gserviceaccount.com'))
+            throw Error('The existing credential is not a valid kk-syllabus signing account');
+          fs.writeFileSync(process.env.SECRET_FILE,
+            JSON.stringify({FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON:value}),{mode:0o600});
+          console.log('Existing encrypted kk-syllabus credential validated; no secret displayed');
+          NODE
+          tag="kk-french-firebase-$(printf '%.12s' "$GITHUB_SHA")"
+          npx wrangler versions upload -c wrangler-app-monitor.jsonc --keep-vars \
+            --secrets-file "$secret_file" --strict --tag "$tag" \
+            --message "Undeployed Firebase passkey bridge using previously stored Kk-syllabus secret"
+          rm -f "$secret_file"
+          npx wrangler versions list --name apps-monitor-api --json > "$RUNNER_TEMP/staged-versions.json"
+          node - "$tag" <<'NODE'
+          const fs=require('node:fs'),rows=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/staged-versions.json','utf8'));
+          const candidate=rows.filter(x=>x.annotations?.['workers/tag']===process.argv[2]);
+          if(candidate.length!==1||!candidate[0].metadata?.has_preview)
+            throw Error('No unique preview-enabled staged version found');
+          const id=candidate[0].id;
+          fs.appendFileSync(process.env.GITHUB_ENV,'APP_MONITOR_STAGED='+id+'\n');
+          console.log('Candidate uploaded but NOT deployed: '+id.slice(0,8));
+          NODE
+      - name: Verify secret inheritance and protected App Monitor endpoints
+        working-directory: apps
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx wrangler versions view "$APP_MONITOR_STAGED" --name apps-monitor-api --json > "$RUNNER_TEMP/staged-worker.json"
+          node <<'NODE'
+          const fs=require('node:fs');
+          const active=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/active-worker.json','utf8'));
+          const staged=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/staged-worker.json','utf8'));
+          const before=JSON.stringify(active.resources||{}),after=JSON.stringify(staged.resources||{});
+          const critical=['APP_MONITOR_DATA','FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON',
+            'BIZ_CATALOG_GITHUB_TOKEN','ALLOWED_ORIGIN','FCM_PROJECT_ID'];
+          for(const name of critical){
+            if(!before.includes(name))throw Error('Current Worker unexpectedly lacks binding '+name);
+            if(!after.includes(name))throw Error('STAGED CANDIDATE BLOCKED: missing '+name);
+          }
+          console.log('All critical binding names present in candidate; no secret values inspected');
+          NODE
+          prefix=$(printf '%.8s' "$APP_MONITOR_STAGED")
+          export APP_MONITOR_API_BASE="https://$prefix-apps-monitor-api.nirav2000-github.workers.dev"
+          expected=$(node -p "require('fs').readFileSync('app-monitor-worker.js','utf8').match(/const WORKER_BUILD='([^']+)'/)[1]")
+          ready=''
+          for attempt in $(seq 1 12); do
+            actual=$(curl -sS --max-time 15 "$APP_MONITOR_API_BASE/health?attempt=$attempt" |
+              node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{try{console.log(JSON.parse(s).build||"")}catch{}})' || true)
+            if [ "$actual" = "$expected" ]; then ready=1; break; fi
+            sleep 3
+          done
+          test "$ready" = 1
+          node tests/app-monitor-auth-live.mjs
+          endpoint="$APP_MONITOR_API_BASE/app-monitor/owner/french/firebase-token"
+          origin='Origin: https://nirav2000.github.io'
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "$origin" -X POST "$endpoint")
+          test "$code" = 401
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "$origin" "$endpoint")
+          test "$code" = 405
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://invalid.example' -X POST "$endpoint")
+          test "$code" = 403
+          npx wrangler deployments list --name apps-monitor-api --json > "$RUNNER_TEMP/deployments-after-stage.json"
+          node <<'NODE'
+          const fs=require('node:fs'),data=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/deployments-after-stage.json','utf8'));
+          const deployed=(data.at(-1)?.versions||[]).filter(x=>x.percentage>0);
+          if(deployed.length!==1||deployed[0].percentage!==100||
+             deployed[0].version_id!==process.env.APP_MONITOR_PREVIOUS)
+            throw Error('Production changed while staging — stop immediately');
+          console.log('PASS: new bridge, R2 passkeys, protected endpoints and original production unchanged');
+          NODE
+          echo "STAGING VERIFIED; no production promotion was attempted."
