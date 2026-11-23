@@ -45,8 +45,15 @@ jobs:
           });
           if(!authResponse.ok)throw Error('Firebase rejected custom JWT (HTTP '+authResponse.status+'). No credentials were logged.');
           const result=await authResponse.json();
-          if(result.localId!==expectedUid||typeof result.idToken!=='string'||result.idToken.length<100)
-            throw Error('Returned Firebase identity is not the existing parent account');
+          // Firebase custom-token exchange returns idToken, NOT localId;
+          // verify identity via the Firebase ID token subject and project claims.
+          if(typeof result.idToken!=='string'||result.idToken.length<100)
+            throw Error('Firebase custom-token exchange returned no ID token');
+          const claims=JSON.parse(Buffer.from(result.idToken.split('.')[1]||'','base64url').toString('utf8'));
+          if(claims.sub!==expectedUid||claims.user_id!==expectedUid||
+             claims.aud!=='kk-syllabus'||
+             claims.iss!=='https://securetoken.google.com/kk-syllabus')
+            throw Error('Returned Firebase token is not for the existing parent/project');
           console.log('PASS: Original Kk-syllabus signing key exchanged for existing parent Firebase Auth identity.');
           // Verify Firestore owner-scoped rule permits read-only access; an absent
           // record returns 404 and is as valid as 200 for this authorisation check.
