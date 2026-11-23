@@ -19,7 +19,9 @@ export function buildPayload(active,stage,activeId,stagedId){
     throw Error('Staged candidate is missing the new Firebase binding');
   if(a.get('BIZ_CATALOG_GITHUB_TOKEN')?.type!=='secret_text' ||
      b.get('FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON')?.type!=='secret_text')
-    throw Error('Expected secrets are not encrypted text bindings');
+    throw Error('Unexpected binding metadata types (names only): Biz='+
+      String(a.get('BIZ_CATALOG_GITHUB_TOKEN')?.type||'missing')+
+      ', Firebase='+String(b.get('FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON')?.type||'missing'));
   for(const name of mandatory){
     if(a.has(name)&&b.has(name)&&a.get(name).type!==b.get(name).type)
       throw Error('Candidate changed binding type of '+name);
