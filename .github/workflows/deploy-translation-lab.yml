@@ -51,7 +51,7 @@ jobs:
           console.log('Dedicated worker configuration prepared; no credentials logged.');
           NODE
           cd shared-apps/translation/v1
-          npx --yes wrangler@4 deploy --config wrangler.json --keep-vars
+          npx --yes wrangler@4 deploy --config wrangler.json
           if [ -n "$GOOGLE_TRANSLATE_KEY" ]; then
             printf '%s' "$GOOGLE_TRANSLATE_KEY" | npx --yes wrangler@4 secret put GOOGLE_TRANSLATE_KEY --config wrangler.json
           else
