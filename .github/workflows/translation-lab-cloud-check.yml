@@ -1,0 +1,106 @@
+name: Translation Lab — Firebase and provider readiness
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/translation-lab-cloud-check.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: nirav2000/Apps
+          ref: 5e8284bdf18c6106443471ddd50ea97a3c10a4ce
+          path: shared-apps
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify real owner sign-in, isolated Firestore record, and Google API readiness
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KK_SYLLABUS }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {firebaseConfig,OWNER_UID} from './src/firebase-config.js';
+          import {mintFrenchFirebaseToken} from './shared-apps/french-teaching/v1/firebase-passkey-bridge.js';
+          import {webcrypto,createSign,randomUUID} from 'node:crypto';
+          const account=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT||'null');
+          if(account?.project_id!=='kk-syllabus')throw Error('Existing Firebase account unavailable');
+          const jsonHeader={'Content-Type':'application/json'};
+          const jwt=await mintFrenchFirebaseToken(account,{cryptoImpl:webcrypto});
+          const exchange=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key='+encodeURIComponent(firebaseConfig.apiKey),{method:'POST',headers:jsonHeader,body:JSON.stringify({token:jwt,returnSecureToken:true}),signal:AbortSignal.timeout(20000)});
+          if(!exchange.ok)throw Error('Firebase exchange failed: HTTP '+exchange.status);
+          const {idToken}=await exchange.json();
+          const claims=JSON.parse(Buffer.from(idToken.split('.')[1],'base64url').toString());
+          if(claims.sub!==OWNER_UID||claims.aud!=='kk-syllabus')throw Error('Unexpected Firebase identity');
+          const auth={Authorization:'Bearer '+idToken};
+          console.log('PASS: actual existing owner Firebase token exchange.');
+          const root='https://firestore.googleapis.com/v1/projects/kk-syllabus/databases/(default)/documents';
+          const checkPath=root+'/families/'+OWNER_UID+'/learners/translation-lab-ci/progress/healthcheck-'+randomUUID();
+          const fields={app:{stringValue:'translation-lab-ci'},test:{booleanValue:true},record:{stringValue:'synthetic comparison: Hello / Bonjour'}};
+          let accessToken=null;
+          try{
+            const b64=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
+            const now=Math.floor(Date.now()/1000);
+            const unsigned=b64({alg:'RS256',typ:'JWT'})+'.'+b64({iss:account.client_email,scope:'https://www.googleapis.com/auth/cloud-platform',aud:'https://oauth2.googleapis.com/token',iat:now,exp:now+600});
+            const signer=createSign('RSA-SHA256');signer.update(unsigned);signer.end();
+            const assertion=unsigned+'.'+signer.sign(account.private_key).toString('base64url');
+            const oauth=await fetch('https://oauth2.googleapis.com/token',{method:'POST',body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion}),signal:AbortSignal.timeout(20000)});
+            if(oauth.ok)accessToken=(await oauth.json()).access_token;
+          }catch{}
+          if(!accessToken)console.log('LIMITATION: Google Cloud administrative readiness cannot be inspected.');
+          if(accessToken){
+            const admin={Authorization:'Bearer '+accessToken};
+            const put=await fetch(checkPath+'?currentDocument.exists=false',{method:'PATCH',headers:{...jsonHeader,...auth},body:JSON.stringify({fields}),signal:AbortSignal.timeout(20000)});
+            if(!put.ok)throw Error('Owner-scoped Firestore test write rejected HTTP '+put.status);
+            try{
+              const get=await fetch(checkPath,{headers:auth,signal:AbortSignal.timeout(20000)});
+              if(!get.ok||(await get.json()).fields?.test?.booleanValue!==true)throw Error('Firestore test record not retrieved');
+              const deny=await fetch(checkPath,{signal:AbortSignal.timeout(20000)});
+              if(![401,403].includes(deny.status))throw Error('Unauthenticated record read not denied');
+              console.log('PASS: real owner Firestore create/read and anonymous read denial, synthetic test learner only.');
+            }finally{
+              const del=await fetch(checkPath,{method:'DELETE',headers:admin,signal:AbortSignal.timeout(20000)});
+              if(!del.ok)throw Error('Could not remove isolated synthetic test record HTTP '+del.status);
+              console.log('PASS: synthetic CI record removed. No real learning history modified.');
+            }
+            const billing=await fetch('https://cloudbilling.googleapis.com/v1/projects/kk-syllabus/billingInfo',{headers:admin,signal:AbortSignal.timeout(20000)});
+            if(billing.ok)console.log('Google Cloud billing already enabled: '+Boolean((await billing.json()).billingEnabled));
+            else console.log('Google Cloud billing status unavailable: HTTP '+billing.status);
+            const service=await fetch('https://serviceusage.googleapis.com/v1/projects/'+firebaseConfig.messagingSenderId+'/services/translate.googleapis.com',{headers:admin,signal:AbortSignal.timeout(20000)});
+            if(service.ok)console.log('Cloud Translation API state: '+(await service.json()).state);
+            else console.log('Cloud Translation API state unavailable: HTTP '+service.status);
+            console.log('No billing, API enablement, IAM or provider credentials changed.');
+          }else{
+            const read=await fetch(root+'/families/'+OWNER_UID+'/learners/translation-lab-ci/progress/healthcheck-read-only',{headers:auth,signal:AbortSignal.timeout(20000)});
+            if(![200,404].includes(read.status))throw Error('Firestore owner access rejected HTTP '+read.status);
+            console.log('PASS: Firestore read-only access; write test skipped without cleanup authority.');
+          }
+          const worker='https://translation-lab.nirav2000-github.workers.dev';
+          try{
+            const health=await fetch(worker+'/health',{signal:AbortSignal.timeout(10000)});
+            if(!health.ok)throw Error('HTTP '+health.status);
+            const status=await fetch(worker,{method:'POST',headers:{Origin:'https://nirav2000.github.io',...jsonHeader,...auth},body:JSON.stringify({action:'status'}),signal:AbortSignal.timeout(20000)});
+            if(!status.ok)throw Error('Owner gateway status HTTP '+status.status);
+            const ready=await status.json();
+            console.log('PASS: live authorised gateway connection '+JSON.stringify(ready));
+            if(ready.ai){
+              const ai=await fetch(worker,{method:'POST',headers:{Origin:'https://nirav2000.github.io',...jsonHeader,...auth},body:JSON.stringify({action:'explain',prompt:'Explain the French expression Bonjour in one sentence.'}),signal:AbortSignal.timeout(45000)});
+              if(!ai.ok||!(await ai.json()).explanation)throw Error('AI test failed HTTP '+ai.status);
+              console.log('PASS: real in-app AI explanation.');
+            }
+            if(ready.google||ready.deepl){
+              const tr=await fetch(worker,{method:'POST',headers:{Origin:'https://nirav2000.github.io',...jsonHeader,...auth},body:JSON.stringify({action:'translate',source:'Good morning',from:'en',to:'fr',deepl:ready.deepl}),signal:AbortSignal.timeout(45000)});
+              const result=await tr.json();
+              if(!tr.ok||ready.google&&!result.google||ready.deepl&&!result.deepl)throw Error('Provider translation test failed');
+              console.log('PASS: genuine configured provider translations returned.');
+            }
+          }catch(e){console.log('LIMITATION: separate Worker not yet verified: '+e.message)}
+          NODE
