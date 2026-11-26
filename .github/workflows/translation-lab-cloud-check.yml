@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: nirav2000/Apps
-          ref: 5e8284bdf18c6106443471ddd50ea97a3c10a4ce
+          ref: d6fe2232b11d34b00bf47315b048314244844e47
           path: shared-apps
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -43,6 +43,24 @@ jobs:
           const auth={Authorization:'Bearer '+idToken};
           console.log('PASS: actual existing owner Firebase token exchange.');
           const root='https://firestore.googleapis.com/v1/projects/kk-syllabus/databases/(default)/documents';
+          // Dedicated persistent marker; never contains any learning data.
+          const marker=root+'/families/'+OWNER_UID+'/learners/translation-lab-ci/progress/gateway-auth-v1';
+          const markerFields={app:{stringValue:'translation-lab'},kind:{stringValue:'owner-auth-probe'},schema:{integerValue:'1'}};
+          const existingMarker=await fetch(marker,{headers:auth,signal:AbortSignal.timeout(20000)});
+          if(existingMarker.status===404){
+            const create=await fetch(marker+'?currentDocument.exists=false',{method:'PATCH',headers:{...jsonHeader,...auth},body:JSON.stringify({fields:markerFields}),signal:AbortSignal.timeout(20000)});
+            if(!create.ok)throw Error('Auth probe setup failed HTTP '+create.status);
+          }else if(!existingMarker.ok)throw Error('Auth probe access failed HTTP '+existingMarker.status);
+          const proof=await fetch(marker,{headers:auth,signal:AbortSignal.timeout(20000)});
+          if(!proof.ok)throw Error('Owner proof denied');
+          const markerDoc=await proof.json();
+          if(markerDoc.fields?.app?.stringValue!=='translation-lab'||markerDoc.fields?.kind?.stringValue!=='owner-auth-probe'||markerDoc.fields?.schema?.integerValue!=='1')throw Error('Unexpected auth probe content');
+          const forged=idToken.split('.').slice(0,2).join('.')+'.YWJj';
+          for(const h of [{},{Authorization:'Bearer '+forged}]){
+            const denied=await fetch(marker,{headers:h,signal:AbortSignal.timeout(20000)});
+            if(![401,403].includes(denied.status))throw Error('Auth probe exposed to unauthenticated or forged token');
+          }
+          console.log('PASS: dedicated Firebase auth proof created or reused; genuine owner accepted, anonymous and forged tokens denied.');
           const checkPath=root+'/families/'+OWNER_UID+'/learners/translation-lab-ci/progress/healthcheck-'+randomUUID();
           const fields={app:{stringValue:'translation-lab-ci'},test:{booleanValue:true},record:{stringValue:'synthetic comparison: Hello / Bonjour'}};
           let accessToken=null;
@@ -86,9 +104,9 @@ jobs:
           const worker='https://translation-lab.nirav2000-github.workers.dev';
           try{
             const health=await fetch(worker+'/health',{signal:AbortSignal.timeout(10000)});
-            if(!health.ok)throw Error('HTTP '+health.status);
+            if(!health.ok)throw Error('HTTP '+health.status);const live=await health.json();console.log('Gateway build under test: '+live.build);
             const status=await fetch(worker,{method:'POST',headers:{Origin:'https://nirav2000.github.io',...jsonHeader,...auth},body:JSON.stringify({action:'status'}),signal:AbortSignal.timeout(20000)});
-            if(!status.ok)throw Error('Owner gateway status HTTP '+status.status);
+            if(!status.ok){const error=await status.json().catch(()=>({}));throw Error('Owner gateway status HTTP '+status.status+' '+(error.code||''));}
             const ready=await status.json();
             console.log('PASS: live authorised gateway connection '+JSON.stringify(ready));
             if(ready.ai){
