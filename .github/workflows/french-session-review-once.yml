@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   review:
-    if: github.repository == 'nirav2000/Kk-syllabus' && github.ref == 'refs/heads/main' && github.event.before == 'd79a173ec22fcadb9149bfa4ba4fe8989822e0d1'
+    if: github.repository == 'nirav2000/Kk-syllabus' && github.ref == 'refs/heads/main' && github.event.before == '7cfcefaab471da18a918a611e0b71a07eb3bc760'
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
@@ -122,9 +122,11 @@ jobs:
            // Encrypted compact analysis inputs, no account identifiers or session IDs.
            const report={window:{start:tm(start),end:tm(end)},cloud:{answerDocuments:answers.length,journeyDocuments:batches.length},day:stat(day),focus:stat(focus),exactRows:exactRows.map(short),focusRelated:focus.filter(x=>related(x)&&!exact(x)).map(short),journey:{dayEvents:j.length,focusEvents:jFocus.length,types:by(jFocus,x=>x.type),pages:by(screens,x=>x.page),controls:by(jFocus.filter(e=>e.type==='click'),e=>e.control?.key),tasks:tasks.slice(0,120),plans:jFocus.filter(e=>e.type==='plan').map(e=>({time:tm(e.at),mode:e.mode,activity:e.activity,stage:e.stage})),matchingResults:jFocus.filter(e=>e.type==='exercise-result'&&focus.some(x=>exact(x)&&x.ref===e.ref)).map(e=>({time:tm(e.at),ref:e.ref,activity:e.activity,outcome:e.outcome}))}};
            phase='encrypt';
-           seal('SUMMARY',report);
+           const earlier=day.filter(x=>x.at<start&&related(x)).map(x=>({time:tm(x.at),f:fr(x),a:x.answer,r:x.result,s:x.support,activity:x.activity,stage:x.context?.stage,k:x.context?.kind,mode:x.signal?.mode}));
+           const plans=a.filter(x=>x.signal?.kind==='adaptive-plan'&&x.at<end&&x.at>=start).map(x=>{const p=x.signal.plan||{};return {time:tm(x.at),position:p.position,target:p.target,targetKind:p.targetKind,reason:p.reason,mode:p.mode,fr:p.fr,priority:p.priority,unitId:p.unitId,newContext:p.newContext};});
+           seal('DETAIL',{earlier,plans});
            // A second compact payload preserves all in-window exercise prompts and outcomes.
-           seal('TIMELINE',focus.map(short));
+           // Focus timeline was already retrieved; return only the supporting detail.
            console.log('Encrypted scoped report complete. No Firestore mutations.');
           }catch(error){
            const allowed=['credential','config','auth','scope','query','scope mismatch','read','pagination','bounded query exceeded; no partial report'];
