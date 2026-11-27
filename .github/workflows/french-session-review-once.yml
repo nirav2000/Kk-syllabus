@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   review:
-    if: github.repository == 'nirav2000/Kk-syllabus' && github.ref == 'refs/heads/main' && github.event.before == '124e215bdc6c2652c1c7ef5c0d31a6278429421c'
+    if: github.repository == 'nirav2000/Kk-syllabus' && github.ref == 'refs/heads/main' && github.event.before == 'd79a173ec22fcadb9149bfa4ba4fe8989822e0d1'
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
@@ -80,15 +80,16 @@ jobs:
              const f=op=>({fieldFilter:{field:{fieldPath:'__name__'},op:op==='lo'?'GREATER_THAN_OR_EQUAL':'LESS_THAN',value:{referenceValue:prefix+(op==='lo'?'':'\uf8ff')}}});
              const rows=[];let after=null;
              for(let i=0;i<40;i++){
-              const structuredQuery={from:[{collectionId:'progress'}],select:{fields:['schema','app','ownerUid','learnerId','event.id','event.appId','event.accountId','event.learnerId','event.at',...fields].map(fieldPath=>({fieldPath}))},where:{compositeFilter:{op:'AND',filters:[f('lo'),f('hi')]}},orderBy:[{field:{fieldPath:'__name__'},direction:'ASCENDING'}],limit:500,...(after?{startAt:{values:[{referenceValue:after}],before:false}}:{})};
+              const structuredQuery={from:[{collectionId:'progress'}],where:{compositeFilter:{op:'AND',filters:[f('lo'),f('hi')]}},orderBy:[{field:{fieldPath:'__name__'},direction:'ASCENDING'}],limit:500,...(after?{startAt:{values:[{referenceValue:after}],before:false}}:{})};
               const res=await fetch(endpoint,{method:'POST',headers:header,body:JSON.stringify({structuredQuery}),signal:AbortSignal.timeout(45000)});
               if(!res.ok){console.log('Firestore HTTP '+res.status+' while reading '+(app.endsWith('journey')?'journey':'answers'));throw Error('read');}
               const json=await res.json();
-              if(!Array.isArray(json)||json.some(r=>r.error))throw Error('query');
+              if(!Array.isArray(json)||json.some(r=>r.error)){console.log('Query envelope invalid: '+(Array.isArray(json)?'row error':'not array'));throw Error('query');}
               const docs=json.map(r=>r.document).filter(Boolean);
               for(const d of docs){
                const x=unpack({mapValue:{fields:d.fields}}),e=x.event;
-               if(!d.name.startsWith(prefix)||x.schema!==1||x.ownerUid!==expectedUid||x.learnerId!=='adult'||x.app!==app||e?.appId!==app||e.accountId!==expectedUid||e.learnerId!=='adult'||e.id!==d.name.slice(prefix.length))throw Error('scope mismatch');
+               const checks={documentPrefix:typeof d.name==='string'&&d.name.startsWith(prefix),schema:x.schema===1,owner:x.ownerUid===expectedUid,learner:x.learnerId==='adult',app:x.app===app,event:!!e,eventApp:e?.appId===app,eventOwner:e?.accountId===expectedUid,eventLearner:e?.learnerId==='adult',eventId:typeof d.name==='string'&&e?.id===d.name.slice(prefix.length)};
+               if(Object.values(checks).some(v=>!v)){console.log('Scope validation failed: '+Object.keys(checks).filter(k=>!checks[k]).join(', '));throw Error('scope mismatch');}
                rows.push(e);
               }
               if(docs.length<500)return rows;
@@ -125,7 +126,9 @@ jobs:
            // A second compact payload preserves all in-window exercise prompts and outcomes.
            seal('TIMELINE',focus.map(short));
            console.log('Encrypted scoped report complete. No Firestore mutations.');
-          }catch{
+          }catch(error){
+           const allowed=['credential','config','auth','scope','query','scope mismatch','read','pagination','bounded query exceeded; no partial report'];
+           console.log('Safe failure category: '+(allowed.includes(error.message)?error.message:error.name));
            console.log('Scoped read stopped safely at '+phase+'; no credentials or plaintext records logged.');
            process.exitCode=1;
           }
